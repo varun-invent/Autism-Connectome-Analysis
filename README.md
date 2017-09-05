@@ -5,8 +5,6 @@ TODO:
 Add:
 * Version
 * Issue
-* Hook to zenodo https://zenodo.org/ to get a DOI (Didital Object Identifier) So that people can cite this work
-
-If I change something
+* Hook to zenodo https://zenodo.org/ to get a DOI (Didital Object Identifier) So that people can cite this work.
 
 
