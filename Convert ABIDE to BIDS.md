@@ -111,6 +111,6 @@ which you downloaded from `indi_bidsification` to the NYU folder of ABIDE-BIDS c
 
   ```
 
-  So, now you know how to convert the NYU's site data of ABIDE to BIDS format. I you followed carefully, you can extend this procedure for converting other INDI datasets to BIDS.
+  So, now you know how to convert the NYU's site data of ABIDE to BIDS format. If you followed carefully, you can extend this procedure for converting other INDI datasets to BIDS.
 
   Happy Learning!
