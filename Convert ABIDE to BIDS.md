@@ -85,31 +85,32 @@ which you downloaded from `indi_bidsification` to the NYU folder of ABIDE-BIDS c
   $tree ABIDE-BIDS
   ```
   This was the result:
+
   ```
   ABIDE-BIDS
-└── NYU
-    ├── participants.tsv
-    ├── sub-0050952
-    │   ├── anat
-    │   │   └── sub-0050952_T1w.nii.gz
-    │   └── func
-    │       └── sub-0050952_task-rest_run-1_bold.nii.gz
-    ├── sub-0050953
-    │   ├── anat
-    │   │   └── sub-0050953_T1w.nii.gz
-    │   └── func
-    │       └── sub-0050953_task-rest_run-1_bold.nii.gz
-    ├── sub-0050954
-    │   ├── anat
-    │   │   └── sub-0050954_T1w.nii.gz
-    │   └── func
-    │       └── sub-0050954_task-rest_run-1_bold.nii.gz
-    ...
-    ├── T1w.json
-    └── task-rest_bold.json
+  └── NYU
+      ├── participants.tsv
+      ├── sub-0050952
+      │   ├── anat
+      │   │   └── sub-0050952_T1w.nii.gz
+      │   └── func
+      │       └── sub-0050952_task-rest_run-1_bold.nii.gz
+      ├── sub-0050953
+      │   ├── anat
+      │   │   └── sub-0050953_T1w.nii.gz
+      │   └── func
+      │       └── sub-0050953_task-rest_run-1_bold.nii.gz
+      ├── sub-0050954
+      │   ├── anat
+      │   │   └── sub-0050954_T1w.nii.gz
+      │   └── func
+      │       └── sub-0050954_task-rest_run-1_bold.nii.gz
+      ...
+      ├── T1w.json
+      └── task-rest_bold.json
 
   ```
 
-  So, now you know how to convert the NYU's site data of ABIDE to BIDS format. I you followed carefully, you can extend this procedure for converting other INDI datasets to BIDS. 
+  So, now you know how to convert the NYU's site data of ABIDE to BIDS format. I you followed carefully, you can extend this procedure for converting other INDI datasets to BIDS.
 
   Happy Learning!
