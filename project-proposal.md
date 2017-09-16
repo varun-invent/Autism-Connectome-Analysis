@@ -56,8 +56,20 @@ To proceed with the analysis, I think of two suitable ways. Either:
   2. [] Extract time series of ROIs
   3. [] Run pearson and Partial correlations to test sex differences in ASD population.
  
-   Machine learning approach  
-  - Any ideas on how to proceed here?
+### Machine learning approach
+   
+   There are three sequential steps that i can suggest
+  
+   3.1 Apply feature selection algorithms to select subsets of voxels for use in model construction ,one is multivariate             feature selection algorithm,Recursive Feature Elimination (RFE) that uses the training algorithm (support vector             machine) recursively to eliminate irrelevant voxels and estimate informative spatial patterns.
+        `Article://www.ncbi.nlm.nih.gov/pubmed/18672070`    
+   3.2 Buid predictive models to classify the two classes i.e ASD men vs ASD women, then compare the accuracy of the models. 
+   
+   3.3 Finding discriminating voxels and region
+   
+    3.3.1 Voxels which lead to the discrimination between the classes are identified.
+    3.3.2 Finding the regions based on the discriminating voxles with best predictive accuracy.
+    
+`In the last,we can compare the results of statistical and Machine learning approach.`
 
 ### Code Development
 I have not made any extensive research in this part yet, though we can base our code on available nypipe projects.
