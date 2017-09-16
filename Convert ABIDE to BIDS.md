@@ -67,11 +67,12 @@ $cd pathmatcher/
 ```
 - Execute the following commands:
 ```
-$python pathmatcher.py -ri "(.+)/(\d{7})/session_(\d)/anat_(\d)/mprage.nii.gz" -ro "\1/sub-\2/anat/sub-\2_T1w.nii.gz" -i ABIDE -o ABIDE-BIDS -c
+$python pathmatcher.py -ri "(.+)/(\d{7})/session_(\d)/anat_(\d)/mprage.nii.gz" -ro "\1/sub-\2/anat/sub-\2_T1w.nii.gz" -i ../ABIDE -o ../ABIDE-BIDS -c
 $python pathmatcher.py -ri "(.+)/(\d{7})/session_(\d)/rest_(\d)/rest.nii.gz" -ro "\1/sub-\2/func/sub-\2_task-rest_run-\4_bold.nii.gz" -i ../ABIDE -o ../ABIDE-BIDS -c
 ```
 As you can see, the above commands are exactly same as the ones given in `bidsify.py` with just the folder names changed.  
 The first command converts the folders containing the anatomical MRI files to BIDS and second command works on functional MRI files and folders.   
+
 
 - Copy manually the following files:
   - `indi_bidsification/ABIDE/participants_tsvs/nyu/participants.tsv`  
@@ -79,6 +80,20 @@ The first command converts the folders containing the anatomical MRI files to BI
   - `indi_bidsification/ABIDE/scan_jsons/NYU/task-rest_bold.json`  
 
 which you downloaded from `indi_bidsification` to the NYU folder of ABIDE-BIDS created by the above mentioned `pathmatcher` commands.
+
+OR
+
+- If `wget` is supported on your terminal, then you can use the following commands to download the files from git 
+
+  - cd to NYU folder of ABIDE-BIDS `../ABIDE-BIDS/NYU/`  
+
+then run the following commands
+```
+ $ wget https://github.com/FCP-INDI/indi_bidsification/blob/master/ABIDE/participants_tsvs/nyu/participants.tsv
+ $ wget https://github.com/FCP-INDI/indi_bidsification/blob/master/ABIDE/scan_jsons/NYU/T1w.json
+ $ wget https://github.com/FCP-INDI/indi_bidsification/blob/master/ABIDE/scan_jsons/NYU/task-rest_bold.json
+```
+
 
 - To check if BIDS was successfully created, execute the `tree` command in terminal.
   ```
