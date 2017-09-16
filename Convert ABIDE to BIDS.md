@@ -67,7 +67,7 @@ $cd pathmatcher/
 ```
 - Execute the following commands:
 ```
-$python pathmatcher.py -ri "(.+)/(\d{7})/session_(\d)/anat_(\d)/mprage.nii.gz" -ro "\1/sub-\2/anat/sub-\2_T1w.nii.gz" -i ABIDE -o ABIDE-BIDS -c
+$python pathmatcher.py -ri "(.+)/(\d{7})/session_(\d)/anat_(\d)/mprage.nii.gz" -ro "\1/sub-\2/anat/sub-\2_T1w.nii.gz" -i ../ABIDE -o ../ABIDE-BIDS -c
 $python pathmatcher.py -ri "(.+)/(\d{7})/session_(\d)/rest_(\d)/rest.nii.gz" -ro "\1/sub-\2/func/sub-\2_task-rest_run-\4_bold.nii.gz" -i ../ABIDE -o ../ABIDE-BIDS -c
 ```
 As you can see, the above commands are exactly same as the ones given in `bidsify.py` with just the folder names changed.  
