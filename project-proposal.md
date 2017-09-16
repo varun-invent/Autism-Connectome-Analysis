@@ -1,4 +1,6 @@
 ## Project Proposal
+Following is the project proposed by Laura V  [[Link to Github Repo](https://github.com/lau-v/Autism-Connectome-Analysis)]. I just created the .md version of it.
+
 
 Hi everyone!
 Following the advice of Rapid Rounds for Reproducible Science:
