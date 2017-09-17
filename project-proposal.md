@@ -2,58 +2,43 @@
 
 ### Theoretical Motivation
 
-Diagnosing Autism Spectrum Disorder (ASD) is a very difficult task as there isn't a full proof method like a blood test or brain MRI Scan to diagnose the disorder. Doctors look at the child’s behavior and development to make a diagnosis.[1](https://www.cdc.gov/ncbddd/autism/screening.html). There are many children that are misdiagnosed. For example, it has been argued, overall better social and linguistic skills of ASD women have contributed to a misdiagnosis or late diagnosis. The aim of this project is to find biomarkers using the fMRI data of typically developing(TD) people and people with ASD that can help predict if a person suffers from ASD or not. We will be working with ABIDE I data, specifically the NYU's site resting state fMRI data
+Autism Spectrum Disoder (ASD) is a neurodevelopmental disorder characterized by deficits in social communication and social interaction, and by restrictive repetitive patterns of behaviors. ASD heterogeneity is huge, symptom severity varies from severe impairment to mild impairment, and from requiring substantial support to requiring support. Consequently, a categorial approach and a behavioral assessment of the ASD core symptoms fail to detect ASD subjects in the upper spectrum. Those ASD subjects with mild impairments are susceptible of a misdiagnosis or a late diagnosis [1](https://www.ncbi.nlm.nih.gov/pubmed/25193140).
 
-
-Moreover ASD women profile has not been fully investigated. Possibly, due to striking differences in prevalence (3:1) and misdiagnosis. We wish to look into that as well if time permits.
+This project aims to find a connectivity biomarker that can differentiate a subject suffering from ASD from a subject with neurotypical development (TD) using the resting state fMRI scans of ABIDE I NYU data base. We aim to build a classifer with high sensitivity, but not at the expense of high specificity. However, we know, we might need to make a trade-off. 
 
 ### Research Design
-We plan to start without a hypothesis, with a completely data based approach.
-1. Parcellate the whole brain using some good Atlas.
-2. Calculating the pair-wise Functional Connectivity using average BOLD time series from all these regions got using Atlas.
-3. Then doing a group level analysis to see the FC different in ASD vs TD.
-4. Constructing a criterea for single subject diagnosis of ASD.
-5. Doing analysis of the two groups of FC maps using interpretable Machine Learning approaches.
-6. Comparing the approaches {3,4} vs {5}.
+We will employ a data driven approach. We plan to use Machine Learning to do the following:
 
-### Statistical Analysis
+1. Atlas based parcellation of the whole brain.
+2. Extract the average BOLD time series of all those regions and calculate pair-wise functional connectivity (FC) of those regions.
+3. Run a group level analysis to contrast functional connectivity across groups (ASD vs. TD)
+4. Use interpretable Machine Learning approaches to classify our groups according to its functional connectivity maps (ASD vs. TD).
+5. Compare the afore mentioned approaches in terms of sensitivity and specificity across regions.
 
-#### Standard statistical testing approach
-1. Define ROI's (Regions of Interests).    
-    - Atlas based  
-        - Pros:
-          - By far, We think this is the easiest approach.  
-        - Cons:
-          - Not recommended in longitudinal studies.  
+#### Machine learning implementation
 
-  2. Extract time series of ROIs by taking average of all voxel time series.
-    - Pros:
-      - Easy to implement
+   To build our model, we will:
+   1. Apply feature selection algorithms to select a subset of voxels using:
+      - A multivariate feature selection algorithm, and 
+      - A Recursive Feature Elimination (RFE):
+        - We will use the training algorithm (support vector machine) recursively, to eliminate irrelevant voxels and estimate informative spatial patterns [2](http://www.ncbi.nlm.nih.gov/pubmed/18672070).    
 
-    - Cons:
-      - Might introduce artifacts.
+   2. Buid predictive models to differentiate ASD subjects from TD subjects. 
+   
+   3. Compare the accuracy of the models above.
 
-  3. Run pearson and Partial correlations to get the FC matrices.  
+   4. Find discriminating voxels and regions
 
-#### Machine learning approach
-
-There are three sequential steps:
-
-   1. Apply feature selection algorithms to select subsets of voxels for use in model construction:
-      - Multivariate feature selection algorithm
-        - Recursive Feature Elimination (RFE):
-          - Uses the training algorithm (support vector machine) recursively to eliminate irrelevant voxels and estimate                  informative spatial patterns. [Article](http://www.ncbi.nlm.nih.gov/pubmed/18672070)    
-
-   2. Buid predictive models to classify the two classes i.e ASD men vs ASD women, then compare the accuracy of the models.
-
-   3. Finding discriminating voxels and region
-
-      - Voxels which lead to the discrimination between the classes are identified.
-      - Finding the regions based on the discriminating voxles with best predictive accuracy.
-
-At last,we can compare the results of statistical and Machine learning approach.
-
+      - Discriminating voxels (those voxels with the highest predictive accuracy) will lead to class identification (ASD vs TD).
+      - Discriminating regions will be found using discriminating voxels 
+      
 ### Code Development
-- We will be primarily working with Nipype.
-- We have converted the data to BIDS format.
-- Currently we are working on constructing a preprocessing pipeline.
+- We will be using mostly, Nipype.
+- We have already converted our dataset to BIDS format.
+- Currently, we are working in the preprocessing of our pipeline.
+
+### References
+1. Anderson, G. M. (2015). Autism biomarkers: challenges, pitfalls and possibilities. Journal of autism and developmental disorders, 45(4), 1103-1113.
+
+2. De Martino, F., Valente, G., Staeren, N., Ashburner, J., Goebel, R., & Formisano, E. (2008). Combining multivariate voxel selection and support vector machines for mapping and classification of fMRI spatial patterns. Neuroimage, 43(1), 44-58.
+
