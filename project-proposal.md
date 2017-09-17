@@ -2,7 +2,7 @@
 
 ### Theoretical Motivation
 
-Autism Spectrum Disoder (ASD) is a neurodevelopmental disorder characterized by deficits in social communication and social interaction, and by restrictive repetitive patterns of behaviors. ASD heterogeneity is huge, symptom severity varies from severe impairment to mild impairment, and from requiring substantial support to requiring support. Consequently, a categorial approach and a behavioral assessment of the ASD core symptoms fail to detect ASD subjects in the upper spectrum. Those ASD subjects with mild impairments are susceptible of a misdiagnosis or a late diagnosis [1](https://www.ncbi.nlm.nih.gov/pubmed/25193140).
+Autism Spectrum Disoder (ASD) is a neurodevelopmental disorder characterized by deficits in social communication and social interaction, and by restrictive repetitive patterns of behaviors. ASD heterogeneity is huge, symptom severity varies from severe impairment to mild impairment, and from requiring substantial support to requiring support. Consequently, a categorial approach and a behavioral assessment of the ASD core symptoms fail to detect ASD subjects in the upper spectrum. ASD subjects with mild impairments are susceptible of a misdiagnosis or a late diagnosis [1](https://www.ncbi.nlm.nih.gov/pubmed/25193140).
 
 This project aims to find a connectivity biomarker that can differentiate a subject suffering from ASD from a subject with neurotypical development (TD) using the resting state fMRI scans of ABIDE I NYU data base. We aim to build a classifer with high sensitivity, but not at the expense of high specificity. However, we know, we might need to make a trade-off. 
 
@@ -25,7 +25,7 @@ We will employ a data driven approach. We plan to use Machine Learning to do the
 
    2. Buid predictive models to differentiate ASD subjects from TD subjects. 
    
-   3. Compare the accuracy of the models above.
+   3. Compare the accuracy of the aforementioned models.
 
    4. Find discriminating voxels and regions
 
