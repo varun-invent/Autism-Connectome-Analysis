@@ -23,7 +23,7 @@ We will employ a data driven approach. We plan to use Machine Learning to do the
       - A Recursive Feature Elimination (RFE):
         - We will use the training algorithm (support vector machine) recursively, to eliminate irrelevant voxels and estimate informative spatial patterns [2](http://www.ncbi.nlm.nih.gov/pubmed/18672070).    
 
-   2. Buid predictive models to differentiate ASD subjects from TD subjects. 
+   2. Build predictive models to differentiate ASD subjects from TD subjects. 
    
    3. Compare the accuracy of the models above.
 
