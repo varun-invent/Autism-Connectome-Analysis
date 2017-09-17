@@ -22,7 +22,7 @@ We plan to start without a hypothesis, with a completely data based approach.
 1. Define ROI's (Regions of Interests).    
     - Atlas based  
         - Pros:
-          - By far, I think this is the easiest approach.  
+          - By far, We think this is the easiest approach.  
         - Cons:
           - Not recommended in longitudinal studies.  
 
@@ -41,8 +41,8 @@ There are three sequential steps:
 
    1. Apply feature selection algorithms to select subsets of voxels for use in model construction:
       - Multivariate feature selection algorithm
-      - Recursive Feature Elimination (RFE):
-        - Uses the training algorithm (support vector machine) recursively to eliminate irrelevant voxels and estimate informative spatial patterns. [Article](http://www.ncbi.nlm.nih.gov/pubmed/18672070)    
+        - Recursive Feature Elimination (RFE):
+          - Uses the training algorithm (support vector machine) recursively to eliminate irrelevant voxels and estimate                  informative spatial patterns. [Article](http://www.ncbi.nlm.nih.gov/pubmed/18672070)    
 
    2. Buid predictive models to classify the two classes i.e ASD men vs ASD women, then compare the accuracy of the models.
 
