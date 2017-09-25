@@ -1,0 +1,30 @@
+[
+    {
+        "group": 1,
+        "imports": [],
+        "name": "0_BIDSDataGrabber",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "0_BIDSDataGrabber"
+        ],
+        "name": "1_Brain-Extraction-Node",
+        "size": 1
+    },
+    {
+        "group": 2,
+        "imports": [],
+        "name": "2_BIDSDataGrabber",
+        "size": 1
+    },
+    {
+        "group": 2,
+        "imports": [
+            "2_BIDSDataGrabber"
+        ],
+        "name": "3_Brain-Extraction-Node",
+        "size": 1
+    }
+]
