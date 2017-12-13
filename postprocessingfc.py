@@ -767,7 +767,10 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
 
     # %%time
     # pearcoff.run()
-
+    # Spatial smoothing of 6 fwhm .i.e. sigma = 2.5479
+    spatialSmooth = Node(interface=ImageMaths(op_string='-s 2.5479',
+                                            suffix='_smoothed'),
+                   name='spatialSmooth')
 
     # In[794]:
 
