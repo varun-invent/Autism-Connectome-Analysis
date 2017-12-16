@@ -23,7 +23,7 @@ from os.path import join as opj
 import nibabel as nib
 import json
 import numpy as np
-import params
+# import params
 
 
 # In[193]:
@@ -146,8 +146,8 @@ bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270',
 
 # selecting Autistic males(DSM IV) of age <= 18 years
 # df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) ]
-df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open
-# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
+# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open
+df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
 
 
 # In[205]:
@@ -160,8 +160,8 @@ df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV
 
 
 # df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) ]
-df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open
-# df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
+# df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open
+df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
 
 
 # In[207]:
@@ -551,12 +551,15 @@ def main_test(autistic_list, td_list,combination):
 # fc_datasink_name = 'fc_datasink'
 # itr = (list(itertools.product([0, 1], repeat=3)))
 # (1,1,1),
-itr = [(1,1,0)]
+itr = [(1,1,1,1)]
 
-for motion_param_regression, band_pass_filtering, global_signal_regression in itr:
-    combination = 'pearcoff_motionRegress' + str(int(motion_param_regression)) + 'filt' + str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression))
+for motion_param_regression, band_pass_filtering, global_signal_regression, smoothing in itr:
+    combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + \
+              str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
+              'smoothing' + str(int(smoothing))
+
     print("Combination: ",combination)
-    print(motion_param_regression,band_pass_filtering, global_signal_regression)
+    print(motion_param_regression,band_pass_filtering, global_signal_regression, smoothing)
     fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
 #     print(fc_file_list)
 #     apply_fisher = True
