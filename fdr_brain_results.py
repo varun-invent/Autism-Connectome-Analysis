@@ -296,10 +296,10 @@ def _main(params):
           'smoothing' + str(int(smoothing))
     print("Combination: ",combination)
     print(motion_param_regression, band_pass_filtering, global_signal_regression,smoothing)
-    Pvals_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'Pvals.npy')
-    Tvals_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'Tvals.npy')
-    C1_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'meanC1.npy')
-    C2_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'meanC2.npy')
+    Pvals_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'Pvals.npy')
+    Tvals_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'Tvals.npy')
+    C1_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'meanC1.npy')
+    C2_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'meanC2.npy')
 
     brain_path = '/home1/varunk/results_again_again/fc_motionRegress1filt1global0/_subject_id_0050002/func2std_xform/0050002_fc_map_flirt.nii.gz'
     brain_data = nib.load(brain_path)
@@ -319,6 +319,6 @@ pool = Pool(4)
 
 # itr = (list(itertools.product([0, 1], repeat=3)))
 
-itr = [(1,1,1,1)]
+itr = [(1,1,0,1)]
 # ,(1,1,1)
 data_outputs = pool.map(_main, itr)
