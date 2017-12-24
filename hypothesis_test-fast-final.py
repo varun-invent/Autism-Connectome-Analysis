@@ -23,7 +23,7 @@ from os.path import join as opj
 import nibabel as nib
 import json
 import numpy as np
-# import params
+import matching
 
 
 # In[193]:
@@ -147,7 +147,10 @@ bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270',
 # selecting Autistic males(DSM IV) of age <= 18 years
 # df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) ]
 # df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open
-df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
+# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
+# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] >=12) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open age 12-18
+# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] >=6) & (df['AGE_AT_SCAN'] <12) & (df['DSM_IV_TR'] == 1) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open age 6 - lt 12
+# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 1)] # AGE <= 18
 
 
 # In[205]:
@@ -161,8 +164,12 @@ df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV
 
 # df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) ]
 # df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open
-df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
+# df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 2)] # eyes closed
+# df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] >=12) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open age 12- 18
+# df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] >=6) & (df['AGE_AT_SCAN'] <12) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 1)] # eyes open age 6 - lt 12
+# df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0)] # AGE <= 18
 
+# df_aut_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_TR'] == 0) & (df['EYE_STATUS_AT_SCAN'] == 2)] # TD eyes closed
 
 # In[207]:
 
@@ -179,9 +186,66 @@ df_td_lt18_m = df.loc[(df['SEX'] == 1) & (df['AGE_AT_SCAN'] <=18) & (df['DSM_IV_
 # In[209]:
 
 
+# --------------------- Matched data --------------------------------------------
+
+demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
+phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+df_demographics = pd.read_csv(demographics_file_path)
+df_phenotype = pd.read_csv(phenotype_file_path)
+df_phenotype = df_phenotype.sort_values(['SUB_ID'])
+
+
+
+# Volume matching
+print('Volume Matching')
+volumes_bins = np.array([[0,150],[151,200],[201,250],[251,300]])
+matched_df_TD = df_phenotype
+matched_df_AUT = df_phenotype
+matched_df_TD, matched_df_AUT = matching.volumes_matching(volumes_bins, df_demographics, matched_df_TD, matched_df_AUT)
+
+# TR matching
+print('TR Matching')
+TR_bins = np.array([[0,2],[2,2.5],[2.5,3.0]])
+# matched_df_TD = df_phenotype
+# matched_df_AUT = df_phenotype
+matched_df_TD,matched_df_AUT = matching.tr_matching(TR_bins,df_demographics, matched_df_TD, matched_df_AUT)
+
+
+# Age Matching
+print('Age Matching')
+age_bins = np.array([[0,9],[9,12],[12,15],[15,18]])
+# matched_df_TD = df_phenotype
+# matched_df_AUT = df_phenotype
+matched_df_TD,matched_df_AUT = matching.age_matching(age_bins, matched_df_TD, matched_df_AUT)
+
+
+
+df_td_lt18_m = matched_df_TD.loc[(matched_df_TD['SEX'] == 1) & (matched_df_TD['DSM_IV_TR'] == 0) \
+                                                    & (matched_df_TD['EYE_STATUS_AT_SCAN'] == 1) ]
+
+df_aut_lt18_m = matched_df_AUT.loc[(matched_df_AUT['SEX'] == 1) & (matched_df_AUT['DSM_IV_TR'] == 1) \
+                                                    & (matched_df_AUT['EYE_STATUS_AT_SCAN'] == 1) ]
+
+# ----------------------------------------Checking the difference between eyes closed vs open ---------------------------------
+# 
+# df_td_lt18_m = matched_df_TD.loc[(matched_df_TD['SEX'] == 1) & (matched_df_TD['DSM_IV_TR'] == 0) \
+#                                                     & (matched_df_TD['EYE_STATUS_AT_SCAN'] == 1) ]
+#
+# df_aut_lt18_m = matched_df_AUT.loc[(matched_df_AUT['SEX'] == 1) & (matched_df_AUT['DSM_IV_TR'] == 0) \
+#                                                     & (matched_df_AUT['EYE_STATUS_AT_SCAN'] == 2) ]
+#
+
+
+# -------------------------------------------------------------------------------------------------------------------------
 # import pdb; pdb.set_trace()
 df_aut_subid = df_aut_lt18_m.as_matrix(columns=['SUB_ID'])
 df_td_subid = df_td_lt18_m.as_matrix(columns=['SUB_ID'])
+
+print("Storing the subjects' information used")
+df_td_lt18_m.to_csv('TD_subects.csv')
+print('Saved TD_subects.csv')
+df_aut_lt18_m.to_csv('AUT_subjects.csv')
+print('Saved AUT_subects.csv')
 
 
 # In[210]:
@@ -551,10 +615,10 @@ def main_test(autistic_list, td_list,combination):
 # fc_datasink_name = 'fc_datasink'
 # itr = (list(itertools.product([0, 1], repeat=3)))
 # (1,1,1),
-itr = [(1,1,1,1)]
+itr = [(1,1,0,1)]
 
 for motion_param_regression, band_pass_filtering, global_signal_regression, smoothing in itr:
-    combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + \
+    combination = 'pearcoff_motionRegress' + str(int(motion_param_regression)) + 'filt' + \
               str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
               'smoothing' + str(int(smoothing))
 
