@@ -13,7 +13,6 @@ import nibabel as nib
 import json
 import numpy as np
 import os
-import params
 from os.path import join as opj
 # os.chdir('/home1/varunk/Autism-Connectome-Analysis-bids-related/')
 
@@ -291,14 +290,16 @@ if not os.path.exists(save_destination):
 os.chdir(save_destination)
 
 def _main(params):
-    motion_param_regression, band_pass_filtering, global_signal_regression = params
-    combination = 'pearcoff_motionRegress' + str(int(motion_param_regression)) + 'filt' + str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression))
+    motion_param_regression, band_pass_filtering, global_signal_regression,smoothing = params
+    combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + \
+          str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
+          'smoothing' + str(int(smoothing))
     print("Combination: ",combination)
-    print(motion_param_regression, band_pass_filtering, global_signal_regression)
-    Pvals_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'Pvals.npy')
-    Tvals_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'Tvals.npy')
-    C1_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'meanC1.npy')
-    C2_path = opj(hypothesis_test_dir,'hypothesis_test_'+combination,'meanC2.npy')
+    print(motion_param_regression, band_pass_filtering, global_signal_regression,smoothing)
+    Pvals_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'Pvals.npy')
+    Tvals_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'Tvals.npy')
+    C1_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'meanC1.npy')
+    C2_path = opj(hypothesis_test_dir,'hypothesis_test_pearcoff_'+combination,'meanC2.npy')
 
     brain_path = '/home1/varunk/results_again_again/fc_motionRegress1filt1global0/_subject_id_0050002/func2std_xform/0050002_fc_map_flirt.nii.gz'
     brain_data = nib.load(brain_path)
@@ -318,6 +319,6 @@ pool = Pool(4)
 
 # itr = (list(itertools.product([0, 1], repeat=3)))
 
-itr = [(1,1,0)]
+itr = [(1,1,0,1)]
 # ,(1,1,1)
 data_outputs = pool.map(_main, itr)

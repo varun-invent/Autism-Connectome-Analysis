@@ -213,6 +213,28 @@ def get_TR(in_file):
     return TR
 
 
+# ---------------- Added new Node to return TR and other slice timing correction params-------------------------------
+def _getMetadata(in_file):
+    from bids.grabbids import BIDSLayout
+
+    interleaved = True
+    index_dir = False
+    data_directory = '/home1/varunk/data/ABIDE1/RawDataBIDs'
+    layout = BIDSLayout(data_directory)
+    metadata = layout.get_metadata(path=in_file)
+    tr  = metadata['RepetitionTime']
+    slice_order = metadata['SliceAcquisitionOrder']
+    
+    if slice_order.split(' ')[0] == 'Sequential':
+        interleaved =  False
+    if slice_order.split(' ')[1] == 'Descending': 
+        index_dir = True
+
+    return tr, index_dir, interleaved
+
+
+getMetadata = Node(Function(function=_getMetadata, input_names=['in_file'],
+                                output_names=['tr','index_dir','interleaved']), name='getMetadata')
 
 # In[862]:
 
@@ -247,12 +269,14 @@ extract = Node(ExtractROI(t_min=4, t_size=-1),
 # In[864]:
 
 
-slicetimer = Node(SliceTimer(index_dir=False,
-                             interleaved=True,
+slicetimer = Node(SliceTimer(
                              output_type='NIFTI'
                              ),
                   name="slicetimer")
 
+
+
+# index_dir=False,interleaved=True,
 
 # In[865]:
 
@@ -1024,14 +1048,42 @@ wf_motion_correction_bet.connect([
 # ## Observation:
 # Applying masking again on the Normalized func file greately reduced the size from ~600MB -> ~150MB. I think Normalizing might have generated some extra voxels in the region of 'no brain'. Masking again got rid of them. Hence, reduced size.
 
+# ----------------------------------------------------------------------------------------------------------------------------
+## Uncomment the below code to analyze only selected subjects to account for Slice time mismatch -----------------------------
+
+## Adding a module to select only selected participants
+#* KKI 
+#* Leuven_1 
+#* Leuven_2 
+#* SBL 
+#* Stanford (N.A)
+#* Trinity 
+#* UM_1 
+#* UM_2 
+
+import pandas as pd
+#import numpy as np
+
+df = pd.read_csv('/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv') # , index_col='SUB_ID'
+
+df = df.sort_values(['SUB_ID'])
+df
+selected_participants = df.loc[(df['SITE_ID'] == 'KKI') | (df['SITE_ID'] == 'Leuven_1') | (df['SITE_ID'] == 'Leuven_2') \
+                              | (df['SITE_ID'] == 'SBL') | (df['SITE_ID'] == 'Trinity') | (df['SITE_ID'] == 'UM_1') \
+                              | (df['SITE_ID'] == 'UM_2')]
+
+selected_participants = list(map(str, selected_participants.as_matrix(['SUB_ID']).squeeze()))
+
 # ## Main Workflow
 
 # In[911]:
 
 
-# subject_list
+subject_list = selected_participants#[0:2]
+subject_list =  [str(item).zfill(7) for item in subject_list]
 
-
+# ----------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------------
 # In[912]:
 
 
@@ -1062,15 +1114,23 @@ wf.base_dir = base_directory # Dir where all the outputs will be stored(inside B
 
 wf.connect([      (infosource, BIDSDataGrabber, [('subject_id','subject_id')]),
                   (BIDSDataGrabber, extract, [('func_file_path','in_file')]),
-                  (BIDSDataGrabber,slicetimer, [(('func_file_path', get_TR ),'time_repetition')]),
-                  (BIDSDataGrabber,save_file_list, [(('func_file_path', get_TR ),'in_tr')]),
+                  
+                  (BIDSDataGrabber,getMetadata, [('func_file_path','in_file')]),
+            
+                  (getMetadata,slicetimer, [('tr','time_repetition')]),
 
+                
+                  (getMetadata,slicetimer, [('index_dir','index_dir')]),
+            
+                  (getMetadata,slicetimer, [('interleaved','interleaved')]),
+            
+                  (getMetadata,save_file_list, [('tr','in_tr')]),
+                
                   (extract,slicetimer,[('roi_file','in_file')]),
                   (slicetimer,wf_motion_correction_bet,[('slice_time_corrected_file','mcflirt.in_file')])
            ])
 # Run it in parallel
-# get_ipython().magic("time wf.run('MultiProc', plugin_args={'n_procs': 6})")
-wf.run('MultiProc', plugin_args={'n_procs': 8})
+wf.run('MultiProc', plugin_args={'n_procs': 6})
 
 # ### Summary:
 

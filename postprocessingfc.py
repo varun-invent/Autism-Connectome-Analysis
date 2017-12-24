@@ -30,7 +30,7 @@ import numpy as np
 
 
 # Paths
-def main(motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, number_of_subjects = -1, functional_connectivity_directory =None):
+def main(motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, smoothing=0,  number_of_subjects = -1, functional_connectivity_directory =None):
     path_cwd = os.getcwd()
     path_split_list = path_cwd.split('/')
     s = path_split_list[0:-1] # for getting to the parent dir of pwd
@@ -767,7 +767,10 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
 
     # %%time
     # pearcoff.run()
-
+    # Spatial smoothing of 6 fwhm .i.e. sigma = 2.5479
+    spatialSmooth = Node(interface=ImageMaths(op_string='-s 2.5479',
+                                            suffix='_smoothed'),
+                   name='spatialSmooth')
 
     # In[794]:
 
@@ -802,7 +805,12 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
                          apply_xfm=True), name="func2std_xform")
 
 
-    combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression))
+    # smoothing = 1
+
+    combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + \
+              str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
+              'smoothing' + str(int(smoothing))
+
     print("Combination: ",combination)
 
     # new_base_dir = opj(base_directory, functional_connectivity_directory)
@@ -812,7 +820,7 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
 
     wf.connect([(infosource , getSubjectFilenames, [('subject_id','subject_id')])])
 
-    if motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 1: #111
+    if motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 1 and smoothing == 1: #111
         wf.connect([(getSubjectFilenames, calc_residuals, [('brain','subject')])])
         wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
 
@@ -822,7 +830,11 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
         wf.connect([(globalSignalRemoval, bandpass, [('out_file','in_file')])])
         wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
 
-        wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
+        wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
+
+        wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
+
+        # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
         wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
         wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
 
@@ -854,7 +866,7 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
         wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
 
-    elif motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 0: # 110
+    elif motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 0 and smoothing == 1: # 110
             wf.connect([(getSubjectFilenames, calc_residuals, [('brain','subject')])])
             wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
 
@@ -864,7 +876,12 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.connect([(globalSignalRemoval, highpass, [('out_file','in_file')])])
             wf.connect([(getSubjectFilenames, highpass, [('tr','tr')])])
 
-            wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
+            wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
+
+            wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
+
+
+            # wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
 
@@ -891,7 +908,7 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
 
-    elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 1: # 101
+    elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 1 and smoothing == 1: # 101
             wf.connect([(getSubjectFilenames, calc_residuals, [('brain','subject')])])
             wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
 
@@ -901,7 +918,12 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.connect([(calc_residuals, bandpass, [('residual_file','in_file')])])
             wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
 
-            wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
+            wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
+
+            wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
+
+
+            # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
 
@@ -927,7 +949,7 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.write_graph(graph2use='flat', format='png')
             wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
-    elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 0: # 100
+    elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 0 and smoothing == 1: # 100
             wf.connect([(getSubjectFilenames, calc_residuals, [('brain','subject')])])
             wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
 
@@ -937,7 +959,11 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.connect([(calc_residuals, highpass, [('residual_file','in_file')])])
             wf.connect([(getSubjectFilenames, highpass, [('tr','tr')])])
 
-            wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
+            wf.connect([( highpass, spatialSmooth, [('out_file','in_file')])])
+            wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
+
+
+            # wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
 
