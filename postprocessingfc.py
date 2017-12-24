@@ -866,7 +866,7 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
         wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
 
-    elif motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 0: # 110
+    elif motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 0 and smoothing == 1: # 110
             wf.connect([(getSubjectFilenames, calc_residuals, [('brain','subject')])])
             wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
 
@@ -876,7 +876,12 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.connect([(globalSignalRemoval, highpass, [('out_file','in_file')])])
             wf.connect([(getSubjectFilenames, highpass, [('tr','tr')])])
 
-            wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
+            wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
+
+            wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
+
+
+            # wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
 
@@ -944,7 +949,7 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.write_graph(graph2use='flat', format='png')
             wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
-    elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 0: # 100
+    elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 0 and smoothing == 1: # 100
             wf.connect([(getSubjectFilenames, calc_residuals, [('brain','subject')])])
             wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
 
@@ -954,7 +959,11 @@ def main(motion_param_regression=0, global_signal_regression=0, band_pass_filter
             wf.connect([(calc_residuals, highpass, [('residual_file','in_file')])])
             wf.connect([(getSubjectFilenames, highpass, [('tr','tr')])])
 
-            wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
+            wf.connect([( highpass, spatialSmooth, [('out_file','in_file')])])
+            wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
+
+
+            # wf.connect([( highpass, pearcoff, [('out_file','in_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
             wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
 
