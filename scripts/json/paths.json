@@ -1,15 +1,17 @@
 {
-"base_directory_for_results" : "results_again_again",
+"base_directory_for_results" : "resultsABIDE1",
 "motion_correction_bet_directory" : "motion_correction_bet",
-"parent_wf_directory" : "ABIDE1_Preprocess",
+"parent_wf_directory" : "preprocess",
 "coreg_reg_directory" : "coreg_reg",
 "atlas_resize_reg_directory" : "atlas_resize_reg_directory",
 "data_directory" : "data/ABIDE1/RawDataBIDs" ,
-"datasink_name" : "ABIDE1_Preprocess_Datasink",
+"datasink_name" : "Preprocess_Datasink",
 "atlas_path" : "atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-2mm.nii.gz",
 
 "functional_connectivity_directory" : "functional_connectivity",
 "fc_datasink_name" : "fc_datasink",
-"hypothesis_test_dir":"hypothesis_test"
+"hypothesis_test_dir":"hypothesis_test",
+"fdr_results_dir":"fdrRes",
+"scoreCorr":"scoreCorr"
 
 }

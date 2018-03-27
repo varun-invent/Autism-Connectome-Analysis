@@ -23,53 +23,53 @@ import pandas as pd
 # In[147]:
 
 
-def volumes_matching(volumes_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype):
-    # Load demographics file
+# def volumes_matching(volumes_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype):
+#     # Load demographics file
+#
+# #     demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
+# #     phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+# #     volumes_bins = np.array([[0,150],[151,200],[201,250],[251,300]])
+#
+#
+# #     df_demographics = pd.read_csv(demographics_file_path)
+#     df_demographics_volumes = df_demographics.as_matrix(['SITE_NAME','VOLUMES']).squeeze()
+#
+#
+#
+# #     df_phenotype = pd.read_csv(phenotype_file_path)
+# #     df_phenotype = df_phenotype.sort_values(['SUB_ID'])
+#
+#
+#
+#     bins_volumes_AUT_data = []
+#     bins_volumes_TD_data = []
+#
+#     for counter, _bin in enumerate(volumes_bins):
+#         df_demographics_volumes_selected_bin = df_demographics_volumes[np.where(np.logical_and((df_demographics_volumes[:,1] >= _bin[0]),(df_demographics_volumes[:,1] <= _bin[1])))]
+#
+#
+#         selected_AUT = pd.DataFrame()
+#         selected_TD = pd.DataFrame()
+#         for site in df_demographics_volumes_selected_bin:
+# #             print(site[0])
+#             selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype.loc[(df_AUT_phenotype['SEX'] == 1)
+#                                                                     & (df_AUT_phenotype['DSM_IV_TR'] == 1)
+#                                                                     & (df_AUT_phenotype['SITE_ID'] == site[0])]])
+#             selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SEX'] == 1)
+#                                                                       & (df_TD_phenotype['DSM_IV_TR'] == 0)
+#                                                                       & (df_TD_phenotype['SITE_ID'] == site[0])]])
+#
+#         bins_volumes_AUT_data.append(selected_AUT)
+#         bins_volumes_TD_data.append(selected_TD)
+#
+#     matched_df_TD,matched_df_AUT = matching(volumes_bins, bins_volumes_TD_data, bins_volumes_AUT_data)
+# #     sub_ids = selected_df_TD.as_matrix(['SUB_ID']).squeeze()
+#     # matched_df_TD.to_csv('volumes_matched_TD.csv')
+#     return matched_df_TD,matched_df_AUT
 
-#     demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
-#     phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
-#     volumes_bins = np.array([[0,150],[151,200],[201,250],[251,300]])
 
 
-#     df_demographics = pd.read_csv(demographics_file_path)
-    df_demographics_volumes = df_demographics.as_matrix(['SITE_NAME','VOLUMES']).squeeze()
-
-
-
-#     df_phenotype = pd.read_csv(phenotype_file_path)
-#     df_phenotype = df_phenotype.sort_values(['SUB_ID'])
-
-
-
-    bins_volumes_AUT_data = []
-    bins_volumes_TD_data = []
-
-    for counter, _bin in enumerate(volumes_bins):
-        df_demographics_volumes_selected_bin = df_demographics_volumes[np.where(np.logical_and((df_demographics_volumes[:,1] >= _bin[0]),(df_demographics_volumes[:,1] <= _bin[1])))]
-
-
-        selected_AUT = pd.DataFrame()
-        selected_TD = pd.DataFrame()
-        for site in df_demographics_volumes_selected_bin:
-#             print(site[0])
-            selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype.loc[(df_AUT_phenotype['SEX'] == 1)
-                                                                    & (df_AUT_phenotype['DSM_IV_TR'] == 1)
-                                                                    & (df_AUT_phenotype['SITE_ID'] == site[0])]])
-            selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SEX'] == 1)
-                                                                      & (df_TD_phenotype['DSM_IV_TR'] == 0)
-                                                                      & (df_TD_phenotype['SITE_ID'] == site[0])]])
-
-        bins_volumes_AUT_data.append(selected_AUT)
-        bins_volumes_TD_data.append(selected_TD)
-
-    matched_df_TD,matched_df_AUT = matching(volumes_bins, bins_volumes_TD_data, bins_volumes_AUT_data)
-#     sub_ids = selected_df_TD.as_matrix(['SUB_ID']).squeeze()
-    # matched_df_TD.to_csv('volumes_matched_TD.csv')
-    return matched_df_TD,matched_df_AUT
-
-
-
-def matching(bins, bins_TD_data, bins_AUT_data, randomize = True):
+def matching(bins, bins_TD_data, bins_AUT_data, randomize = False):
     # num_bins = 4
     print('Original data stats')
     print('Range    ','TD ','AUT ','Ratio TD/AUT')
@@ -136,7 +136,8 @@ def matching(bins, bins_TD_data, bins_AUT_data, randomize = True):
 
     for i in range(len(bins_TD_data)):
         idx = np.arange(len(bins_TD_data[i]))
-        np.random.shuffle(idx)
+        if randomize == True:
+            np.random.shuffle(idx)
         idx = idx[0:int(new_TD[i])]
         # TD_idx_list.append(idx)
         selected_df_TD = pd.concat([selected_df_TD, bins_TD_data[i].iloc[idx]])
@@ -185,14 +186,20 @@ def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype ):
 
 
 #         print(age[0], age[1])
-        selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype.loc[(df_AUT_phenotype['SEX'] == 1)
-                                                                & (df_AUT_phenotype['DSM_IV_TR'] == 1)
-                                                                & (df_AUT_phenotype['AGE_AT_SCAN'] > age[0])
+        # selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype[(df_AUT_phenotype['SEX'] == 1)
+        #                                                         & (df_AUT_phenotype['DSM_IV_TR'] == 1)
+        #                                                         & (df_AUT_phenotype['AGE_AT_SCAN'] > age[0])
+        #                                                         & (df_AUT_phenotype['AGE_AT_SCAN'] <= age[1]) ]])
+        # selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SEX'] == 1)
+        #                                                         & (df_TD_phenotype['DX_GROUP'] == 2)
+        #                                                         & (df_TD_phenotype['AGE_AT_SCAN'] > age[0])
+        #                                                         & (df_TD_phenotype['AGE_AT_SCAN'] <= age[1]) ]])
+
+        selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype[(df_AUT_phenotype['AGE_AT_SCAN'] > age[0])
                                                                 & (df_AUT_phenotype['AGE_AT_SCAN'] <= age[1]) ]])
-        selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SEX'] == 1)
-                                                                & (df_TD_phenotype['DSM_IV_TR'] == 0)
-                                                                & (df_TD_phenotype['AGE_AT_SCAN'] > age[0])
+        selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['AGE_AT_SCAN'] > age[0])
                                                                 & (df_TD_phenotype['AGE_AT_SCAN'] <= age[1]) ]])
+
 
         bins_age_AUT_data.append(selected_AUT)
         bins_age_TD_data.append(selected_TD)
@@ -247,12 +254,15 @@ def tr_matching(TR_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype ):
         selected_TD = pd.DataFrame()
         for site in df_demographics_TR_selected_bin:
     #             print(site[0])
-            selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype.loc[(df_AUT_phenotype['SEX'] == 1)
-                                                                    & (df_AUT_phenotype['DSM_IV_TR'] == 1)
-                                                                    & (df_AUT_phenotype['SITE_ID'] == site[0])]])
-            selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SEX'] == 1)
-                                                                      & (df_TD_phenotype['DSM_IV_TR'] == 0)
-                                                                      & (df_TD_phenotype['SITE_ID'] == site[0])]])
+            # selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype.loc[(df_AUT_phenotype['SEX'] == 1)
+            #                                                         & (df_AUT_phenotype['DSM_IV_TR'] == 1)
+            #                                                         & (df_AUT_phenotype['SITE_ID'] == site[0])]])
+            # selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SEX'] == 1)
+            #                                                           & (df_TD_phenotype['DX_GROUP'] == 2)
+            #                                                           & (df_TD_phenotype['SITE_ID'] == site[0])]])
+
+            selected_AUT = pd.concat([selected_AUT,df_AUT_phenotype.loc[(df_AUT_phenotype['SITE_ID'] == site[0])]])
+            selected_TD = pd.concat([selected_TD,df_TD_phenotype.loc[(df_TD_phenotype['SITE_ID'] == site[0])]])
 
         bins_TR_AUT_data.append(selected_AUT)
         bins_TR_TD_data.append(selected_TD)
