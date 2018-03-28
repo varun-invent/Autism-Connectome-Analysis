@@ -77,7 +77,7 @@ import pandas as pd
 # MNI3mm_path = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample.nii')
 
 def main(paths, vols, motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, \
-smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7 ):
+smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy = 1 ):
     json_path=paths[0]
     base_directory=paths[1]
     motion_correction_bet_directory=paths[2]
@@ -147,7 +147,7 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7 ):
         smoothing,\
         volcorrect,\
         num_proc,\
-        functional_connectivity_directory )
+        functional_connectivity_directory,save_npy )
 
 
 
@@ -224,7 +224,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
    smoothing,\
    volcorrect,\
    num_proc,\
-   functional_connectivity_directory ):
+   functional_connectivity_directory, save_npy ):
 
     # ## Volume correction
     # * I have already extracted 4 volumes.
@@ -578,7 +578,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # In[516]:
 
 
-    def save_file_list_function(in_fc_map_brain_file):
+    def save_file_list_function_brain(in_fc_map_brain_file):
         # Imports
         import numpy as np
         import os
@@ -593,10 +593,6 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         out_fc_map_brain_file = opj(os.getcwd(),file_name) # path
 
 
-
-
-
-
         return out_fc_map_brain_file
 
 
@@ -604,11 +600,58 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # In[517]:
 
 
-    save_file_list = JoinNode(Function(function=save_file_list_function, input_names=['in_fc_map_brain_file'],
+    save_file_list_brain = JoinNode(Function(function=save_file_list_function_brain, input_names=['in_fc_map_brain_file'],
                      output_names=['out_fc_map_brain_file']),
                      joinsource="infosource",
                      joinfield=['in_fc_map_brain_file'],
-                     name="save_file_list")
+                     name="save_file_list_brain")
+
+    # Utility function that saves the file paths correlation maps' (which are in npy format)
+
+    def save_file_list_function_npy(in_fc_map_npy_file):
+        # Imports
+        import numpy as np
+        import os
+        from os.path import join as opj
+
+
+        file_list = np.asarray(in_fc_map_npy_file)
+        print('######################## File List ######################: \n',file_list)
+
+        np.save('fc_map_npy_file_list',file_list)
+        file_name = 'fc_map_npy_file_list.npy'
+        out_fc_map_npy_file = opj(os.getcwd(),file_name) # path
+
+
+        return out_fc_map_npy_file
+
+
+
+    # In[517]:
+
+
+    save_file_list_npy = JoinNode(Function(function=save_file_list_function_npy, input_names=['in_fc_map_npy_file'],
+                     output_names=['out_fc_map_npy_file']),
+                     joinsource="infosource",
+                     joinfield=['in_fc_map_npy_file'],
+                     name="save_file_list_npy")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     # ## Create a FC node
@@ -747,14 +790,15 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
         path = os.getcwd()
-        fc_file_name = fc_file_name + '.nii.gz'
-        out_file = opj(path,fc_file_name)
+        fc_brain_file_name = fc_file_name + '.nii.gz'
+        out_file_brain = opj(path,fc_brain_file_name)
 
         brain_with_header = nib.Nifti1Image(brain_roi_tensor, affine=brain_data.affine,header = brain_data.header)
-        nib.save(brain_with_header,out_file)
+        nib.save(brain_with_header,out_file_brain)
 
 
-        fc_map_brain_file = out_file
+        fc_map_brain_file = out_file_brain
+
         return fc_map_brain_file
 
 
@@ -797,6 +841,34 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
     func2std_xform = Node(FLIRT(output_type='NIFTI_GZ',
                              apply_xfm=True), name="func2std_xform")
+
+
+
+    def convert_nii_2_npy_func(in_file):
+        import nibabel as  nib
+        import numpy as np
+        import os
+        from os.path import join as opj
+
+        file_name_nii = in_file
+        subject_id = file_name_nii.split('/')[-1].split('_')[0]
+        filename = 'sub-'+subject_id+'.npy'
+        print('converting the Brain of subject %s to npy with filename %s'%(subject_id, filename))
+
+        brain = nib.load(file_name_nii).get_data()
+        np.save(filename,brain)
+
+
+        path = os.getcwd()
+        out_file = opj(path,filename)
+
+        return out_file
+
+
+    nii2npy = Node(Function(function=convert_nii_2_npy_func, input_names=['in_file'],
+                                    output_names=['out_file']), name='nii2npy')
+
+
 
 
 
@@ -935,8 +1007,15 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     wf.connect(getSubjectFilenames, 'MNI3mm_path', func2std_xform,'reference')
 
     folder_name = combination + '.@fc_map_brain_file'
-    wf.connect(func2std_xform, 'out_file',  save_file_list, 'in_fc_map_brain_file')
-    wf.connect(save_file_list, 'out_fc_map_brain_file',  dataSink,folder_name)
+    wf.connect(func2std_xform, 'out_file',  save_file_list_brain, 'in_fc_map_brain_file')
+    wf.connect(save_file_list_brain, 'out_fc_map_brain_file',  dataSink,folder_name)
+
+    if save_npy == 1:
+        folder_name = combination + '.@fc_map_npy_file'
+        wf.connect(func2std_xform, 'out_file', nii2npy,'in_file')
+        wf.connect(nii2npy, 'out_file',  save_file_list_npy, 'in_fc_map_npy_file')
+        wf.connect(save_file_list_npy, 'out_fc_map_npy_file',  dataSink,folder_name)
+
 
 
     TEMP_DIR_FOR_STORAGE = opj(base_directory,'crash_files')
@@ -946,166 +1025,3 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
     # -------------------------------------------------
-
-
-
-
-
-
-    # if motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 1 and smoothing == 1 and volcorrect == 1: # 101
-    #
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('brain','in_file')])])
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
-    #
-    #     wf.connect([( calc_residuals, extract, [('out_file','in_file')])])
-    #
-    #     wf.connect([(infosource, volCorrect, [('subject_id','sub_id')])])
-    #
-    #     wf.connect([( volCorrect, extract, [('t_min','t_min')])])
-    #
-    #     wf.connect([(extract, bandpass, [('roi_file','in_file')])])
-    #
-    #     wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
-    #
-    #     wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
-    #
-    #     wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
-    #
-    #
-    # #     wf.connect([( extract, pearcoff, [('roi_file','in_file')])])
-    #
-    #     # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
-    #
-    #     # ---------------------------------------------------------------------------------------
-    #     wf.connect([(pearcoff, func2std_xform, [('fc_map_brain_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('func2std_mat','in_matrix_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('MNI3mm_path','reference')])])
-    #
-    #     #         -- send out file to save file list and then save the outputs
-    #
-    #
-    #
-    #     folder_name = combination + '.@fc_map_brain_file'
-    #
-    #
-    #
-    #     wf.connect([(func2std_xform,  save_file_list, [('out_file','in_fc_map_brain_file')])])
-    #     # --------------------------------------------------------------------------------------------
-    #
-    #
-    #     wf.connect([(save_file_list,  dataSink, [('out_fc_map_brain_file',folder_name)])])
-    #
-    #     wf.write_graph(graph2use='flat', format='png')
-    # #     from IPython.display import Image
-    # #     wf.write_graph(graph2use='exec', format='png', simple_form=True)
-    #
-    #     wf.run('MultiProc', plugin_args={'n_procs': num_proc})
-    # #     file_name = opj(base_dir,combination,'graph_detailed.dot.png')
-    # #     Image(filename=file_name)
-    #
-    # elif motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 1 and smoothing == 1 and volcorrect == 1: #111
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('brain','in_file')])])
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
-    #
-    #     wf.connect([(calc_residuals, extract, [('out_file','in_file')])])
-    #
-    #     wf.connect([(infosource, volCorrect, [('subject_id','sub_id')])])
-    #
-    #     wf.connect([( volCorrect, extract, [('t_min','t_min')])])
-    #
-    #     wf.connect([(extract, globalSignalRemoval, [('roi_file','in_file')])])
-    #
-    #
-    # #     wf.connect([(calc_residuals, globalSignalRemoval, [('out_file','in_file')] )])
-    #     wf.connect([(getSubjectFilenames, globalSignalRemoval, [('mask','mask_file')])])
-    #
-    #     wf.connect([(globalSignalRemoval, bandpass, [('out_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
-    #
-    #     wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
-    #
-    #     wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
-    #
-    #     # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
-    #
-    #     # ---------------------------------------------------------------------------------------
-    #     wf.connect([(pearcoff, func2std_xform, [('fc_map_brain_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('func2std_mat','in_matrix_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('MNI3mm_path','reference')])])
-
-    #         -- send out file to save file list and then save the outputs
-
-
-
-        # folder_name = combination + '.@fc_map_brain_file'
-        #
-        #
-        #
-        # wf.connect([(func2std_xform,  save_file_list, [('out_file','in_fc_map_brain_file')])])
-        # # --------------------------------------------------------------------------------------------
-        #
-        #
-        # wf.connect([(save_file_list,  dataSink, [('out_fc_map_brain_file',folder_name)])])
-        #
-        #
-        # #  wf.connect([(bandpass,  dataSink, [('out_file','motionRegress_filt_global.@out_file')])])
-        #
-        #
-        # # if motion_param_regression == 1 and global_signal_regression == 1:
-        # wf.write_graph(graph2use='flat', format='png')
-        # wf.run('MultiProc', plugin_args={'n_procs': num_proc})
-
-
-    # elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 0 and smoothing == 1 and volcorrect == 1: # 100
-    #
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('brain','in_file')])])
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
-    #
-    #     wf.connect([( calc_residuals, extract, [('out_file','in_file')])])
-    #
-    #     wf.connect([(infosource, volCorrect, [('subject_id','sub_id')])])
-    #
-    #     wf.connect([( volCorrect, extract, [('t_min','t_min')])])
-    #
-    #     wf.connect([(extract, highpass, [('roi_file','in_file')])])
-    #
-    #     wf.connect([(getSubjectFilenames, highpass, [('tr','tr')])])
-    #
-    #     wf.connect([( highpass, spatialSmooth, [('out_file','in_file')])])
-    #
-    #     wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
-    #
-    #
-    # #     wf.connect([( extract, pearcoff, [('roi_file','in_file')])])
-    #
-    #     # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
-    #
-    #     # ---------------------------------------------------------------------------------------
-    #     wf.connect([(pearcoff, func2std_xform, [('fc_map_brain_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('func2std_mat','in_matrix_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('MNI3mm_path','reference')])])
-    #
-    #     #         -- send out file to save file list and then save the outputs
-    #
-    #
-    #
-    #     folder_name = combination + '.@fc_map_brain_file'
-    #
-    #
-    #
-    #     wf.connect([(func2std_xform,  save_file_list, [('out_file','in_fc_map_brain_file')])])
-    #     # --------------------------------------------------------------------------------------------
-    #
-    #
-    #     wf.connect([(save_file_list,  dataSink, [('out_fc_map_brain_file',folder_name)])])
-    #
-    #     wf.write_graph(graph2use='flat', format='png')
-    #
-    #
-    #     wf.run('MultiProc', plugin_args={'n_procs': num_proc})
