@@ -110,6 +110,15 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     number_of_subjects = len(subject_list)
     print("Working with ",number_of_subjects," subjects.")
 
+    # Options:
+    # discard 4 Volumes (extract), slicetimer, mcflirt
+    print('Preprocessing Options:')
+    print('Skipping 4 dummy volumes - ',options_binary_string[0])
+    print('Slicetiming correction - ',options_binary_string[1])
+    print('Finding Motion Outliers - ',options_binary_string[2])
+    print('Doing Motion Correction - ',options_binary_string[3])
+    motionOutliersOption = options_binary_string[2]
+
     # Create our own custom function - BIDSDataGrabber using a Function Interface.
 
     # In[858]:
@@ -326,8 +335,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     substitutions = [('_subject_id_', 'sub-'),
                      ('_resample_brain_flirt.nii_brain', ''),
                      ('_roi_st_mcf_flirt.nii_brain_flirt', ''),
-                     ('task-rest_run-1_bold_roi_st_mcf.nii','motion_params'),
-                     ('T1w_resample_brain_flirt_sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt','fun2std')
+                     ('task-rest_run-1_bold_roi_st_mcf.nii','motion_params')
+                     # ('T1w_resample_brain_flirt_sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt','fun2std')
                     ]
 
     # Feed the substitution strings to the DataSink node
@@ -602,92 +611,6 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                name="save_file_list_in_atlas")
 
 
-    # save_file_list = JoinNode(Function(function=save_file_list_function, input_names=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix', 'in_tr', 'in_atlas'],
-    #                output_names=['out_brain','out_mask','out_motion_params','out_motion_outliers','out_joint_xformation_matrix','out_tr', 'out_atlas']),
-    #                joinsource="infosource",
-    #                joinfield=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix','in_tr', 'in_atlas'],
-    #                name="save_file_list")
-
-
-
-
-
-
-
-
-    # def save_file_list_function(in_brain, in_mask, in_motion_params, in_motion_outliers, in_joint_xformation_matrix, in_tr, in_atlas):
-    #     # Imports
-    #     import numpy as np
-    #     import os
-    #     from os.path import join as opj
-    #
-    #
-    #     file_list = np.asarray(in_brain)
-    #     print('######################## File List ######################: \n',file_list)
-    #
-    #     np.save('brain_file_list',file_list)
-    #     file_name = 'brain_file_list.npy'
-    #     out_brain = opj(os.getcwd(),file_name) # path
-    #
-    #
-    #     file_list2 = np.asarray(in_mask)
-    #     print('######################## File List ######################: \n',file_list2)
-    #
-    #     np.save('mask_file_list',file_list2)
-    #     file_name2 = 'mask_file_list.npy'
-    #     out_mask = opj(os.getcwd(),file_name2) # path
-    #
-    #
-    #     file_list3 = np.asarray(in_motion_params)
-    #     print('######################## File List ######################: \n',file_list3)
-    #
-    #     np.save('motion_params_file_list',file_list3)
-    #     file_name3 = 'motion_params_file_list.npy'
-    #     out_motion_params = opj(os.getcwd(),file_name3) # path
-    #
-    #
-    #     file_list4 = np.asarray(in_motion_outliers)
-    #     print('######################## File List ######################: \n',file_list4)
-    #
-    #     np.save('motion_outliers_file_list',file_list4)
-    #     file_name4 = 'motion_outliers_file_list.npy'
-    #     out_motion_outliers = opj(os.getcwd(),file_name4) # path
-    #
-    #
-    #     file_list5 = np.asarray(in_joint_xformation_matrix)
-    #     print('######################## File List ######################: \n',file_list5)
-    #
-    #     np.save('joint_xformation_matrix_file_list',file_list5)
-    #     file_name5 = 'joint_xformation_matrix_file_list.npy'
-    #     out_joint_xformation_matrix = opj(os.getcwd(),file_name5) # path
-    #
-    #     tr_list = np.asarray(in_tr)
-    #     print('######################## TR List ######################: \n',tr_list)
-    #
-    #     np.save('tr_list',tr_list)
-    #     file_name6 = 'tr_list.npy'
-    #     out_tr = opj(os.getcwd(),file_name6) # path
-    #
-    #
-    #     file_list7 = np.asarray(in_atlas)
-    #     print('######################## File List ######################: \n',file_list7)
-    #
-    #     np.save('atlas_file_list',file_list7)
-    #     file_name7 = 'atlas_file_list.npy'
-    #     out_atlas = opj(os.getcwd(),file_name7) # path
-    #
-    #
-    #
-    #
-    #     return out_brain, out_mask, out_motion_params, out_motion_outliers, out_joint_xformation_matrix, out_tr , out_atlas
-    #
-    #
-    #
-    # save_file_list = JoinNode(Function(function=save_file_list_function, input_names=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix', 'in_tr', 'in_atlas'],
-    #                  output_names=['out_brain','out_mask','out_motion_params','out_motion_outliers','out_joint_xformation_matrix','out_tr', 'out_atlas']),
-    #                  joinsource="infosource",
-    #                  joinfield=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix','in_tr', 'in_atlas'],
-    #                  name="save_file_list")
 
 
     # ### Motion outliers
@@ -700,37 +623,40 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     wf_atlas_resize_reg = Workflow(name=atlas_resize_reg_directory)
 
-    wf_atlas_resize_reg.connect([
+
 
                 # Apply the inverse matrix to the 3mm Atlas to transform it to func space
 
-                (maskfunc4mean, std2func_xform, [(('out_file','reference'))]),
+    wf_atlas_resize_reg.connect([(maskfunc4mean, std2func_xform, [(('out_file','reference'))])])
 
-                (resample_atlas, std2func_xform, [('out_file','in_file')] ),
+    wf_atlas_resize_reg.connect([(resample_atlas, std2func_xform, [('out_file','in_file')] )])
 
-                # Now, applying the inverse matrix
+    # Now, applying the inverse matrix
 
-                (inv_mat, std2func_xform, [('out_file','in_matrix_file')]), # output: Atlas in func space
+    wf_atlas_resize_reg.connect([(inv_mat, std2func_xform, [('out_file','in_matrix_file')])]) # output: Atlas in func space
 
-                (std2func_xform, save_file_list_in_atlas, [('out_file','in_atlas')]),
+    wf_atlas_resize_reg.connect([(std2func_xform, save_file_list_in_atlas, [('out_file','in_atlas')])])
 
-                # ---------------------------Save the required files --------------------------------------------
+    # ---------------------------Save the required files --------------------------------------------
 
-                (save_file_list_in_motion_params, dataSink, [('out_motion_params','motion_params_paths.@out_motion_params')]),
-                (save_file_list_in_motion_outliers, dataSink, [('out_motion_outliers','motion_outliers_paths.@out_motion_outliers')]),
-                (save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')]),
-                (save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')]),
+    wf_atlas_resize_reg.connect([(save_file_list_in_motion_params, dataSink, [('out_motion_params','motion_params_paths.@out_motion_params')])])
 
-                (save_file_list_in_joint_xformation_matrix, dataSink, [('out_joint_xformation_matrix',
-                                             'joint_xformation_matrix_paths.@out_joint_xformation_matrix')]),
+    if motionOutliersOption == 1:
+        wf_atlas_resize_reg.connect([(save_file_list_in_motion_outliers, dataSink, [('out_motion_outliers','motion_outliers_paths.@out_motion_outliers')])])
 
-                (save_file_list_in_tr, dataSink, [('out_tr','tr_paths.@out_tr')]),
+    wf_atlas_resize_reg.connect([(save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')])])
+    wf_atlas_resize_reg.connect([(save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')])])
 
-                (save_file_list_in_atlas, dataSink, [('out_atlas','atlas_paths.@out_atlas')])
+    wf_atlas_resize_reg.connect([(save_file_list_in_joint_xformation_matrix, dataSink, [('out_joint_xformation_matrix',
+                                 'joint_xformation_matrix_paths.@out_joint_xformation_matrix')])])
+
+    wf_atlas_resize_reg.connect([(save_file_list_in_tr, dataSink, [('out_tr','tr_paths.@out_tr')])])
+
+    wf_atlas_resize_reg.connect([(save_file_list_in_atlas, dataSink, [('out_atlas','atlas_paths.@out_atlas')])])
 
 
 
-    ])
+
 
 
     # In[909]:
@@ -890,13 +816,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
 
 
-    # Options:
-    # discard 4 Volumes (extract), slicetimer, mcflirt
-    print('Preprocessing Options:')
-    print('Skipping 4 dummy volumes - ',options_binary_string[0])
-    print('Slicetiming correction - ',options_binary_string[1])
-    print('Finding Motion Outliers - ',options_binary_string[2])
-    print('Doing Motion Correction - ',options_binary_string[3])
+
 
     # ANAT = 0
     nodes = [extract, slicetimer,motionOutliers, mcflirt]
