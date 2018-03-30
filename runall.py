@@ -1,7 +1,3 @@
-
-
-
-
 import postProcessingFcVolMatchedModularDynamicPipeline as ppfc
 # import preprocessingPipelineImprovedModular as prep
 import preprocessingPipelineImprovedModularWOAnatDynamic as prep
@@ -13,6 +9,9 @@ import json
 from os.path import join as opj
 import itertools
 from bids.grabbids import BIDSLayout
+import time
+
+
 
 # ------------- Paths ----------------------------------------------------------------------------------------
 
@@ -57,10 +56,26 @@ hypothesis_test_dir = opj(base_directory, task_info["hypothesis_test_dir"])
 
 fdr_results_dir = task_info["fdr_results_dir"]
 
+score_corr_dir =  opj(base_directory,task_info["score_corr_dir"])
+
 demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
 phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 # categoryInfo = '/home1/varunk/data/NYU_Cocaine-BIDS/grouping.csv'
 categoryInfo = None
+
+# --------------- Creating Log --------------------
+
+# Get time
+
+current_time = time.asctime( time.localtime(time.time()) )
+
+log_path = opj(base_directory,"log.txt")
+log = open(log_path, 'a')
+print("-------------Starting the analysis at %s--------------\n"%(current_time))
+log.write("-------------Starting the analysis at %s--------------\n"%(current_time))
+log.flush()
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -69,14 +84,15 @@ number_of_skipped_volumes = 4
 #  True volumes will be vols - number_of_skipped_volumes
 
 
-num_proc = 4
+num_proc = 7
 
 
 number_of_subjects = -1
-# number_of_subjects = 2 # Number of subjects you wish to work with
+# number_of_subjects = 7 # Number of subjects you wish to work with
 
-
-
+log.write("Vols for matching: %s\n"%(vols))
+log.write("Number_of_skipped_volumes: %s\n"%(number_of_skipped_volumes))
+log.flush()
 # ----------------------------- Getting Subjects -------------------------------
 # ----------------------------------- BIDS -------------------------------------
 layout = BIDSLayout(data_directory)
@@ -124,12 +140,15 @@ demographics_file_path,
 phenotype_file_path,
 data_directory,
 hypothesis_test_dir,
-fdr_results_dir]
+fdr_results_dir,
+score_corr_dir
+]
 
-PREPROC = 1
-POSTPROC = 1
-HYPOTEST = 1
-FDRES = 1
+PREPROC = 0
+POSTPROC = 0
+HYPOTEST = 0
+FDRES = 0
+SCORE_CORR = 1
 
 match = 1 # Age matching
 applyFisher = True
@@ -137,6 +156,15 @@ applyFisher = True
 # itr = (list(itertools.product([0, 1], repeat=3)))
 itr = [(1,0,1,1,1)]
 # itr = [(1,1,1,1,1)]
+
+log.write("Operations:\n")
+log.write("Preprocess = %s\n"%(PREPROC))
+log.write("Postprocess = %s\n"%(POSTPROC))
+log.write("Hypothesis Test = %s\n"%(HYPOTEST))
+log.write("FDR correction and Vizualization = %s\n"%(FDRES))
+log.write("Score-Connectivity Correlation  = %s\n"%(SCORE_CORR))
+log.flush()
+
 # ---------------------- Preprocess --------------------------------------------
 
 ANAT = 1
@@ -145,6 +173,16 @@ itr_preproc = [1,1,0,1]
 # itr_preproc = [0,0,0]
 extract, slicetimer,motionOutliers, mcflirt= list(map(str, itr_preproc))
 options_binary_string = extract+slicetimer+motionOutliers+mcflirt
+
+log.write("Preprocessing Params\n")
+log.write("Remove begining slices  = %s\n"%(extract))
+log.write("Slice time correction  = %s\n"%(slicetimer))
+log.write("Calculate motionOutliers  = %s\n"%(motionOutliers))
+log.write("Do motion correction using McFLIRT  = %s\n"%(mcflirt))
+
+log.flush()
+
+
 if PREPROC == 1:
     print('Preprocessing')
     prep.main(paths,options_binary_string, ANAT, num_proc)
@@ -170,6 +208,8 @@ if POSTPROC == 1:
 
 # ------------------- Hypothesis Test ------------------------------------------
 
+bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
+
 if HYPOTEST == 1:
     print('Hypothesis Test')
 
@@ -177,7 +217,7 @@ if HYPOTEST == 1:
     #
     # itr = [(1,1,0,1,1)]
 
-    bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
+    # bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
 
     # bugs = []
 
@@ -194,3 +234,18 @@ if FDRES == 1:
     # itr = [(1,1,0,1,1)]
     for params in itr:
         fdres.main(paths, params, num_proc = 7)
+
+
+if SCORE_CORR == 1:
+    print('Calculating Correlation-Score correaltions')
+
+    # itr = (list(itertools.product([0, 1], repeat=3)))
+    #
+    # itr = [(1,1,0,1,1)]
+
+
+    # bugs = []
+
+    for motion_param_regression, global_signal_regression, smoothing,band_pass_filtering, volCorrect in itr:
+        ht.main(paths, bugs,applyFisher,categoryInfo, match, motion_param_regression, global_signal_regression, band_pass_filtering, \
+            smoothing, num_proc)
