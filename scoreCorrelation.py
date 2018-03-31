@@ -119,7 +119,7 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, coef_path,  mask_path, save_d
 
     Pvals = np.load(Pvals_path)
     Tvals= np.load(Tvals_path)
-    coefficients = np.load(coef_path)
+    coeff_vals = np.load(coef_path)
 
     mask = nib.load(mask_path).get_data()
 
@@ -132,7 +132,7 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, coef_path,  mask_path, save_d
     Qvals = np.zeros(Pvals_shape)
 
     # sign(c1-c2) * -1 * log10(p)
-    map_logp = np.multiply(np.sign(coefficients),(-1*np.log10(Pvals)))
+    map_logp = np.multiply(np.sign(coeff_vals),(-1*np.log10(Pvals)))
 
 
     roi_voxel_stats_matrix = np.zeros((Pvals_shape[3], 14)) # cozthere are 14 statistical attributes
@@ -164,17 +164,16 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, coef_path,  mask_path, save_d
         # print("Size of map_logp_list ",map_logp_list.shape)
 #         print("Brain Indices: ", brain_indices)
 
-        coefficients_list = coefficients[:,:,:,roi][brain_indices]
+        coeff_vals_list = coeff_vals[:,:,:,roi][brain_indices]
 
 
         #     Calculate voxel stats using the below function
 
         Qvals[:,:,:,roi][brain_indices] = qvals_list
 
-        # TODO: check if we need to multiply coefficients_list to p vals to get map log p list to calc voxel stats
 
 
-        map_logq_list = np.multiply(np.sign(coefficients_list),(-1*np.log10(qvals_list)))
+        map_logq_list = np.multiply(np.sign(coeff_vals_list),(-1*np.log10(qvals_list)))
 
         # print("Size of map_logq_list ",map_logq_list.shape)
 
@@ -187,7 +186,7 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, coef_path,  mask_path, save_d
 
 
     # sign(c1-c2) * -1 * log10(q)
-    map_logq = np.multiply(np.sign(coefficients),(-1*np.log10(Qvals)))
+    map_logq = np.multiply(np.sign(coeff_vals),(-1*np.log10(Qvals)))
 
 
 
@@ -198,10 +197,41 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, coef_path,  mask_path, save_d
     print('Saving Files in directory: ', save_destination_new)
 
     print('Saving Stats CSV : ',)
-    csv_name = 'roi_voxel_stats_' + combination + '.csv'
-    np.savetxt(csv_name,roi_voxel_stats_matrix,delimiter=',',header='min_pval,min_qval,p_lt_point_1,p_lt_point_01, p_lt_point_05, q_lt_point_1, q_lt_point_01,q_lt_point_05, logq_gt_1point3, logq_gt_1 ,logq_gt_2 ,logp_gt_1point3, logp_gt_1, logp_gt_2'
+    csv_name = opj(save_destination_new,'roi_voxel_stats_' + combination + '.csv')
+    np.savetxt(csv_name,roi_voxel_stats_matrix,delimiter=',',header='min_pval,min_qval,p_lt_point_1,p_lt_point_01,\
+     p_lt_point_05, q_lt_point_1, q_lt_point_01,q_lt_point_05, logq_gt_1point3, logq_gt_1 ,logq_gt_2 ,\
+     logp_gt_1point3, logp_gt_1, logp_gt_2')
 
-              )
+    print('Saving Pvals.nii.gz')
+    Pvals_name = opj(save_destination_new,'Pvals.nii.gz')
+    Pvals_brain_with_header = nib.Nifti1Image(Pvals, affine= affine,header = header)
+    nib.save(Pvals_brain_with_header,Pvals_name)
+
+    print('Saving Tvals.nii.gz')
+    Tvals_name = opj(save_destination_new,'Tvals.nii.gz')
+    Tvals_brain_with_header = nib.Nifti1Image(Tvals, affine= affine,header = header)
+    nib.save(Tvals_brain_with_header,Tvals_name)
+
+    print('Saving Qvals.nii.gz')
+    Qvals_name = opj(save_destination_new,'Qvals.nii.gz')
+    Qvals_brain_with_header = nib.Nifti1Image(Qvals, affine= affine,header = header)
+    nib.save(Qvals_brain_with_header,Qvals_name)
+
+    print('Saving coeff_vals.nii.gz')
+    coeff_vals_name = opj(save_destination_new,'coeff_vals.nii.gz')
+    coeff_vals_brain_with_header = nib.Nifti1Image(coeff_vals, affine= affine,header = header)
+    nib.save(coeff_vals_brain_with_header,coeff_vals_name)
+
+    print('Saving map_logp.nii.gz')
+    map_logp_name = opj(save_destination_new,'map_logp.nii.gz')
+    map_logp_brain_with_header = nib.Nifti1Image(map_logp, affine= affine,header = header)
+    nib.save(map_logp_brain_with_header,map_logp_name)
+
+    print('Saving map_logq.nii.gz')
+    map_logq_name = opj(save_destination_new,'map_logq.nii.gz')
+    map_logq_brain_with_header = nib.Nifti1Image(map_logq, affine= affine,header = header)
+    nib.save(map_logq_brain_with_header,map_logq_name)
+
 
 
 
@@ -236,7 +266,11 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 def get_subject_fc_file_and_score(subid_and_scores_list,fc_file_path, bugs):
     import re
     subject_id_list = subid_and_scores_list[0].squeeze()
-    phenotype_score = subid_and_scores_list[1].squeeze()
+    if isinstance(subid_and_scores_list[1], np.ndarray):
+        phenotype_score = subid_and_scores_list[1].squeeze()
+    else:
+        return get_subject_fc_file(subject_id_list,fc_file_path, bugs)
+
 
     # phenotype_score = np.array(phenotype_score)
     return_fc_maps = []
@@ -262,6 +296,75 @@ def get_subject_fc_file_and_score(subid_and_scores_list,fc_file_path, bugs):
     return return_fc_maps, return_phenotypic_scores
 
 
+def applyGLM(subject_list,score_list,mask_path,save_destination, num_proc):
+    # Create pool of num_proc workers
+    pool = Pool(num_proc)
+
+    mask_data = nib.load(mask_path).get_data()
+
+    # import pdb;pdb.set_trace()
+    x,y,z,t = np.load(subject_list[0],mmap_mode='r').shape
+
+    print('Calculating input list to give to workers')
+    input_list = [] # for storing the iteration brain coordinates
+    counter = 1
+    for i in range(x):
+        for j in range(y):
+            for k in range(z):
+                if mask_data[i,j,k] != 0: # Brain region
+                    input_list.append([i,j,k,counter])
+                    # counter += 1 # for checking progress..
+
+    print('Number of GLMs to be done for each roi= ', len(input_list))
+
+    pvals = np.zeros((x,y,z,t))
+    tvals = np.zeros((x,y,z,t))
+    coeff_vals = np.zeros((x,y,z,t))
+
+    m = MyManager()
+    m.start()
+
+    print("Starting with the workers")
+    # t = 2
+    for roi in tqdm(range(t)):
+        # print('*****************************************************************')
+        # print('Reading the ROI %s npy brain files in mmap mode'%(roi)) # ############# Memory issue .. work with one ROI at a time.
+        # print('*****************************************************************')
+
+        brain_npy_handle_list = []
+        for in_file in subject_list:
+            brain_npy_handle_list.append(np.load(in_file,mmap_mode='r')[:,:,:,roi])
+
+        pvals_shared = m.np_zeros((x,y,z))
+        tvals_shared = m.np_zeros((x,y,z))
+        coeff_vals_shared = m.np_zeros((x,y,z))
+
+        func = partial(calc_score_stats, brain_npy_handle_list, pvals_shared, tvals_shared, coeff_vals_shared,\
+                                                                                                        score_list, roi)
+
+
+        pool.map(func, input_list)
+
+        # import pdb;pdb.set_trace()
+        pvals[:,:,:,roi] = pvals_shared
+        tvals[:,:,:,roi] = tvals_shared
+        coeff_vals[:,:,:,roi] = coeff_vals_shared
+
+
+    print('Saving files in ',save_destination)
+    if not os.path.exists(save_destination):
+        os.makedirs(save_destination) # to create a nested directory structure
+    Tvals_path = opj(save_destination,'Tvals')
+    Pvals_path = opj(save_destination,'Pvals')
+    coeff_vals_path = opj(save_destination,'coeff_vals')
+
+    np.save(Tvals_path,tvals)
+    np.save(Pvals_path,pvals)
+    np.save(coeff_vals_path,coeff_vals)
+
+    print('Saved')
+
+    return Pvals_path+'.npy', Tvals_path+'.npy', coeff_vals_path+'.npy'
 
 
 
@@ -491,16 +594,26 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
     # for motion_param_regression, band_pass_filtering, global_signal_regression, smoothing in itr:
 
-    # fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
-    fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_npy_file_list.npy')
+    fc_file_list_nii = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
 
+    fc_file_list_npy = opj(base_directory,fc_datasink_name,combination,'fc_map_npy_file_list.npy')
+
+    fc_file_list = fc_file_list_npy
 
     print('Reading the brain paths from: ',fc_file_list)
 #     apply_fisher = True
 
     # import pdb;pdb.set_trace()
-    autistic_list, df_aut_score = (get_subject_fc_file_and_score([df_aut_subid, df_aut_score], fc_file_list, bugs))
-    print("Number of autistic participants ", len(autistic_list))
+    autistic_list_npy, df_aut_score = (get_subject_fc_file_and_score([df_aut_subid, df_aut_score], fc_file_list, bugs))
+    print("Number of autistic participants ", len(autistic_list_npy))
+
+    autistic_list_nii = get_subject_fc_file_and_score([df_aut_subid, None], fc_file_list_nii, bugs)
+
+
+
+
+
+
 
     # td_list = (get_subject_fc_file(df_td_subid.squeeze(), fc_file_list, bugs))
     # print("Number of TD participants ", len(td_list))
@@ -511,107 +624,38 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
     # print("Number of participants being Considered per group:", participants_considered)
 
-    autistic_list = autistic_list#[0:participants_considered]
+    autistic_list = autistic_list_npy#[0:participants_considered]
     # td_list = td_list#[0:participants_considered]
 
     # Created the below mask manually using BET
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample_mask.nii.gz')
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'atlas_resize_reg_directory/resample_atlas/fullbrain_atlas_thr0-2mm_resample_binarize.nii.gz')
-    mask = '/home1/varunk/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz'
+    mask_path = '/home1/varunk/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz'
+    save_destination = opj(score_corr_dir,combination)
 
-    # print('Saving the results in ', hypothesis_test_dir)
-    # tt.main(autistic_list,td_list, combination, mask, applyFisher, hypothesis_test_dir) # sends the file path of autistic and TD and processing params
-
-    # Create a list of loaded npy files
-
-
+    print('Applying GLM in each voxel')
+    Pvals_path, Tvals_path, coeff_vals_path = applyGLM(subject_list = autistic_list,score_list=df_aut_score,mask_path=mask_path,save_destination= save_destination,\
+            num_proc = num_proc)
 
 
 
+    print('Now doing FDR Correctiona and Visualization')
+    brain_path = autistic_list_nii[0] # getting a header to be used later to save brain files
+    brain_data = nib.load(brain_path)
+    affine=brain_data.affine
+    header = brain_data.header
+
+    Pvals_path = opj(save_destination,'Pvals.npy')
+    Tvals_path = opj(save_destination,'Tvals.npy')
+    coeff_vals_path = opj(save_destination,'coeff_vals.npy')
+    fdr_correction_and_viz(Pvals_path, Tvals_path, coeff_vals_path, mask_path, save_destination, affine, header, combination )
 
 
 
-    # Create a prarallel proc pipeline that loops over all the brain voxels inside the mask and
+
+
+
+    # Created above a prarallel proc pipeline that loops over all the brain voxels inside the mask and
         # Create another list of corr values spanning all the subjects
         # Extract FIQ values of the same subjects
         # Use statmodels to caculate the fit of the line and t vals and p vals
-
-
-
-    # m = MyManager()
-    # m.start()
-
-    # Create pool of num_proc workers
-
-    pool = Pool(num_proc)
-
-    mask_data = nib.load(mask).get_data()
-
-    # import pdb;pdb.set_trace()
-    x,y,z,t = np.load(autistic_list[0],mmap_mode='r').shape
-
-    print('Calculating input list to give to workers')
-    input_list = [] # for storing the iteration brain coordinates
-    counter = 1
-    for i in range(x):
-        for j in range(y):
-            for k in range(z):
-                if mask_data[i,j,k] != 0: # Brain region
-                    input_list.append([i,j,k,counter])
-                    counter += 1
-
-    print('Number of GLMs to be done for each roi= ', len(input_list))
-
-    pvals = np.zeros((x,y,z,t))
-    tvals = np.zeros((x,y,z,t))
-    coeff_vals = np.zeros((x,y,z,t))
-
-    m = MyManager()
-    m.start()
-
-    print("Starting with the workers")
-    t = 2
-    for roi in tqdm(range(t)):
-        # print('*****************************************************************')
-        # print('Reading the ROI %s npy brain files in mmap mode'%(roi)) # ############# Memory issue .. work with one ROI at a time.
-        # print('*****************************************************************')
-
-        brain_npy_handle_list = []
-        for in_file in autistic_list:
-            brain_npy_handle_list.append(np.load(in_file,mmap_mode='r')[:,:,:,roi])
-
-        pvals_shared = m.np_zeros((x,y,z))
-        tvals_shared = m.np_zeros((x,y,z))
-        coeff_vals_shared = m.np_zeros((x,y,z))
-
-        func = partial(calc_score_stats, brain_npy_handle_list, pvals_shared, tvals_shared, coeff_vals_shared,\
-                                                                                                        df_aut_score, roi)
-
-
-        pool.map(func, input_list)
-
-        # import pdb;pdb.set_trace()
-        pvals[:,:,:,roi] = pvals_shared
-        tvals[:,:,:,roi] = tvals_shared
-        coeff_vals[:,:,:,roi] = coeff_vals_shared
-
-
-    save_destination = opj(score_corr_dir,combination)
-    print('Saving files in ',save_destination)
-    if not os.path.exists(save_destination):
-        os.makedirs(save_destination) # to create a nested directory structure
-    Tvals_path = opj(save_destination,'Tvals')
-    Pvals_path = opj(save_destination,'Pvals')
-    coeff_vals_path = opj(save_destination,'coeff_vals')
-
-    np.save(Tvals_path,tvals)
-    np.save(Pvals_path,pvals)
-    np.save(coeff_vals_path,coeff_vals)
-
-    print('Saved')
-
-
-
-
-
-    # data_outputs = pool.map(func, input_list)
