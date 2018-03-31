@@ -19,23 +19,47 @@ from statsmodels.sandbox.stats.multicomp import fdrcorrection0
 from functools import partial
 from multiprocessing import Pool
 import multiprocessing.managers
+from tqdm.tqdm import tqdm
 
 
-def calc_score_stats(brain_npy_handle_list, pvals, tvals, coeff_vals, score_list, input_coordinates):
+class MyManager(multiprocessing.managers.BaseManager):
+    pass
+MyManager.register('np_zeros', np.zeros, multiprocessing.managers.ArrayProxy)
+
+
+
+def calc_score_stats(brain_npy_handle_list, pvals, tvals, coeff_vals, score_list, roi, input_coordinates):
     '''
     Returns: pval, tval and coeff of Independent variable
     '''
-    x,y,z,t = input_coordinates
+
+
+    x,y,z,counter = input_coordinates
+    # print('Creating voxel connectivity vector of all subjects for coordinates: %s,%s,%s'%(x,y,z))
+    # if counter % 100 == 0:
+        # print('Coordinate Counter: %s'%(counter))
+
+
     voxel_corr_subject_array = []
     for brain_npy in brain_npy_handle_list:
-        voxel_corr_subject_array.append(brain_npy[x,y,z,t])
+        voxel_corr_subject_array.append(brain_npy[x,y,z])
 
     Y = voxel_corr_subject_array
     X = sm.add_constant(score_list)
+
+    # print('Length of Y is %s',len(Y))
+    # print('Length of X is %s',len(X))
+
+    # print('Fitting GLM')
     model = sm.OLS(Y,X).fit()
-    pvals[x,y,z,t] = model.pvalues[1]
-    tvals[x,y,z,t] = model.tvalues[1]
-    coeff_vals[x,y,z,t] = model.params[1]
+
+    # print('Done')
+
+    pvals[x,y,z] = model.pvalues[1]
+    tvals[x,y,z] = model.tvalues[1]
+    coeff_vals[x,y,z] = model.params[1]
+
+    # print('coeff_vals for coordinate %s %s %s is %s'%(x,y,z,model.params[1]))
 
 
 def count_voxel_stats(pvals_list, qvals_list, map_logp_list, map_logq_list):
@@ -184,7 +208,7 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, coef_path,  mask_path, save_d
 
 
 
-# Now construct a function that takes a list of SUB_ID's and returns the FC Maps
+# Now construct a function that takes a list of SUB_ID's and returns the FC Maps paths
 def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
     import re
 
@@ -207,6 +231,37 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
             print ('Unable to locate Subject: ',int(subject_id),'extracted: ',int(sub_id_extracted))
             # return 0
     return return_fc_maps
+
+# Now construct a function that takes a list of SUB_ID's and returns the FC Maps paths and scores
+def get_subject_fc_file_and_score(subid_and_scores_list,fc_file_path, bugs):
+    import re
+    subject_id_list = subid_and_scores_list[0].squeeze()
+    phenotype_score = subid_and_scores_list[1].squeeze()
+
+    # phenotype_score = np.array(phenotype_score)
+    return_fc_maps = []
+    return_phenotypic_scores = []
+    fc_file_list = np.load(fc_file_path)
+    print('Brain files: ',fc_file_list)
+    for ix, subject_id in enumerate(subject_id_list):
+#         print("For subject: ",subject_id)
+        found =  False
+        for brain in fc_file_list:
+            sub_id_extracted = re.search('.+_subject_id_(\d+)', brain).group(1)
+            if str(subject_id) in bugs:
+                # print("In Bugs with subject id ",subject_id)
+                found = True
+            elif (subject_id == int(sub_id_extracted)):
+                found = True
+                return_fc_maps.append(brain)
+                return_phenotypic_scores.append(phenotype_score[ix])
+#                 print("Found for subject: ",subject_id)
+        if found == False: # Some subject was not found Problem!
+            print ('Unable to locate Subject: ',int(subject_id),'extracted: ',int(sub_id_extracted))
+            # return 0
+    return return_fc_maps, return_phenotypic_scores
+
+
 
 
 
@@ -234,7 +289,8 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     demographics_file_path = paths[18]
     phenotype_file_path = paths[19]
     data_directory = paths[20]
-    hypothesis_test_dir = paths[21]
+    # hypothesis_test_dir = paths[21]
+    score_corr_dir = paths[23]
 
     #  Runall:
 
@@ -397,7 +453,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
         score_name = 'FIQ'
 
         df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
-                                                            & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) & pd.notna(df_phenotype[score_name])]
+                                                            & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) & pd.notnull(df_phenotype[score_name]) & (df_phenotype[score_name] != -9999)]
 
         df_aut_subid = df_aut_lt18_m.as_matrix(columns=['SUB_ID'])
         df_aut_score = df_aut_lt18_m.as_matrix(columns=['FIQ'])
@@ -414,20 +470,20 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     print("Combination: ",combination)
     print(motion_param_regression,band_pass_filtering, global_signal_regression, smoothing)
 
-    save_destination = opj(hypothesis_test_dir,combination)
+    save_destination = opj(score_corr_dir,combination)
     print('Saving files in ',save_destination)
     if not os.path.exists(save_destination):
         os.makedirs(save_destination) # to create a nested directory structure
 
     # save_destination_TD = opj(hypothesis_test_dir,combination,'TD_subects.csv')
-    save_destination_AUT = opj(hypothesis_test_dir,combination,'AUT_subjects.csv')
+    save_destination_AUT = opj(score_corr_dir,combination,'AUT_subjects.csv')
 
     print("Storing the subjects' information used")
     # df_td_lt18_m.to_csv('TD_subects.csv')
     # df_td.to_csv(save_destination_TD)
     # print('Saved TD_subects.csv')
     # df_aut_lt18_m.to_csv('AUT_subjects.csv')
-    df_aut.to_csv(save_destination_AUT)
+    df_aut_lt18_m.to_csv(save_destination_AUT)
     print('Saved AUT_subects.csv')
 
 
@@ -443,7 +499,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 #     apply_fisher = True
 
     # import pdb;pdb.set_trace()
-    autistic_list = (get_subject_fc_file(df_aut_subid.squeeze(), fc_file_list, bugs))
+    autistic_list, df_aut_score = (get_subject_fc_file_and_score([df_aut_subid, df_aut_score], fc_file_list, bugs))
     print("Number of autistic participants ", len(autistic_list))
 
     # td_list = (get_subject_fc_file(df_td_subid.squeeze(), fc_file_list, bugs))
@@ -466,13 +522,8 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     # print('Saving the results in ', hypothesis_test_dir)
     # tt.main(autistic_list,td_list, combination, mask, applyFisher, hypothesis_test_dir) # sends the file path of autistic and TD and processing params
 
-    # TODO:
-
     # Create a list of loaded npy files
 
-    brain_npy_handle_list = [] #
-    for in_file in autistic_list:
-        brain_npy_handle_list.append(np.load(in_file,mmap_mode='r'))
 
 
 
@@ -487,8 +538,8 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
 
 
-    m = MyManager()
-    m.start()
+    # m = MyManager()
+    # m.start()
 
     # Create pool of num_proc workers
 
@@ -496,29 +547,56 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
     mask_data = nib.load(mask).get_data()
 
-    x,y,z,t = nib.load(brain_npy_handle_list[0]).get_data().shape
+    # import pdb;pdb.set_trace()
+    x,y,z,t = np.load(autistic_list[0],mmap_mode='r').shape
 
+    print('Calculating input list to give to workers')
     input_list = [] # for storing the iteration brain coordinates
+    counter = 1
     for i in range(x):
         for j in range(y):
             for k in range(z):
-                for roi in range(t):
-                    if mask_data[i,j,k,t] != 0: # Brain region
-                        input_list.append([i,j,k,t])
+                if mask_data[i,j,k] != 0: # Brain region
+                    input_list.append([i,j,k,counter])
+                    counter += 1
 
+    print('Number of GLMs to be done for each roi= ', len(input_list))
 
     pvals = np.zeros((x,y,z,t))
     tvals = np.zeros((x,y,z,t))
     coeff_vals = np.zeros((x,y,z,t))
 
+    m = MyManager()
+    m.start()
+
+    print("Starting with the workers")
+    t = 2
+    for roi in tqdm(range(t)):
+        # print('*****************************************************************')
+        # print('Reading the ROI %s npy brain files in mmap mode'%(roi)) # ############# Memory issue .. work with one ROI at a time.
+        # print('*****************************************************************')
+
+        brain_npy_handle_list = []
+        for in_file in autistic_list:
+            brain_npy_handle_list.append(np.load(in_file,mmap_mode='r')[:,:,:,roi])
+
+        pvals_shared = m.np_zeros((x,y,z))
+        tvals_shared = m.np_zeros((x,y,z))
+        coeff_vals_shared = m.np_zeros((x,y,z))
+
+        func = partial(calc_score_stats, brain_npy_handle_list, pvals_shared, tvals_shared, coeff_vals_shared,\
+                                                                                                        df_aut_score, roi)
 
 
+        pool.map(func, input_list)
 
-    func = partial(calc_score_stats, brain_npy_handle_list, pvals, tvals, coeff_vals, df_aut_score)
+        # import pdb;pdb.set_trace()
+        pvals[:,:,:,roi] = pvals_shared
+        tvals[:,:,:,roi] = tvals_shared
+        coeff_vals[:,:,:,roi] = coeff_vals_shared
 
-    pool.map(func, input_list)
 
-    save_destination = opj(hypothesis_test_dir,combination)
+    save_destination = opj(score_corr_dir,combination)
     print('Saving files in ',save_destination)
     if not os.path.exists(save_destination):
         os.makedirs(save_destination) # to create a nested directory structure
@@ -526,12 +604,14 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     Pvals_path = opj(save_destination,'Pvals')
     coeff_vals_path = opj(save_destination,'coeff_vals')
 
-    np.save(Tvals_path,Tvals)
-    np.save(Pvals_path,Pvals)
+    np.save(Tvals_path,tvals)
+    np.save(Pvals_path,pvals)
     np.save(coeff_vals_path,coeff_vals)
 
     print('Saved')
 
 
 
-    data_outputs = pool.map(func, input_list)
+
+
+    # data_outputs = pool.map(func, input_list)
