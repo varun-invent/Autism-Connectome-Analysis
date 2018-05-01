@@ -258,7 +258,7 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
                 return_fc_maps.append(brain)
 #                 print("Found for subject: ",subject_id)
         if found == False: # Some subject was not found Problem!
-            print ('Unable to locate Subject: ',int(subject_id),'extracted: ',int(sub_id_extracted))
+            print ('Unable to locate Subject so not including in analysis Query: ',int(subject_id),' Extracted but not included: ',int(sub_id_extracted))
             # return 0
     return return_fc_maps
 
@@ -551,16 +551,31 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
         #                                                     & (matched_df_AUT['AGE_AT_SCAN'] >= 12 )
         #                                                     & (matched_df_AUT['AGE_AT_SCAN'] <= 18) ]
 
-         # Age 6 - 18 Autistic with FIQ score not equal to NAN
+        # Age 6 - 18 Autistic with FIQ score not equal to NAN and -9999
 
-        score_name = 'FIQ'
+        score_name = 'ADI_R_VERBAL_TOTAL_BV'
 
+        print('**************** Correlating score: ',score_name)
         df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
                                                             & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) & pd.notnull(df_phenotype[score_name]) & (df_phenotype[score_name] != -9999)]
 
         df_aut_subid = df_aut_lt18_m.as_matrix(columns=['SUB_ID'])
-        df_aut_score = df_aut_lt18_m.as_matrix(columns=['FIQ'])
+        df_aut_score = df_aut_lt18_m.as_matrix(columns=[score_name])
 
+
+        # Age 6 - 18 Healthy with FIQ score not equal to NAN and -9999
+
+        # score_name = 'FIQ'
+        #
+        # df_TD_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DX_GROUP'] == 2) \
+        #                                                     & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) & pd.notnull(df_phenotype[score_name]) & (df_phenotype[score_name] != -9999)]
+        #
+        #
+        # # Fir simplicity of code I am just naming TD as Autistic so that rest of the code doesn't change
+        #
+        # df_aut_lt18_m = df_TD_lt18_m
+        # df_aut_subid = df_aut_lt18_m.as_matrix(columns=['SUB_ID'])
+        # df_aut_score = df_aut_lt18_m.as_matrix(columns=[score_name])
 
 
 
