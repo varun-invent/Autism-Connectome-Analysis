@@ -49,6 +49,7 @@ But it didn't have json files for the Stanford University and University of Miam
 
 ABIDEII-SDSU_1/sub-28903/ses-1 contains readme_sub-28093_ses-1.txt. Note that the folder has subject ID 28903 whereas readme has got it wrong as 28093. So BIDS data grabber gets confused and while extracting the subject IDs:  
 ```bash
+from bids.grabbids import BIDSLayout
 layout = BIDSLayout(data_dir)    
 subject_list = layout.get_subjects()
 ```
