@@ -130,12 +130,18 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         layout = BIDSLayout(data_dir)
         run = 1
+        session = 1
 
-        anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', extensions=['nii', 'nii.gz'])]
-        func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+        anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', session = session, run=run, extensions=['nii', 'nii.gz'])]
+        func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session, run=run, extensions=['nii', 'nii.gz'])]
+
+        if len(func_file_path)  == 0:
+            print('Error with subject ID %s' % subject_id )
+            raise Exception('No Functional File with subject ID %s' % subject_id)
 
         if len(anat_file_path) == 0:
             return None, func_file_path[0] # No Anatomical files present
+
         return anat_file_path[0],func_file_path[0]
 
 
@@ -150,7 +156,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     def get_TR(in_file):
         from bids.grabbids import BIDSLayout
 
-        data_directory = '/home1/varunk/data/ABIDE1/RawDataBIDs'
+        data_directory = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
         layout = BIDSLayout(data_directory)
         metadata = layout.get_metadata(path=in_file)
         TR  = metadata['RepetitionTime']
@@ -173,7 +179,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         interleaved = True
         index_dir = False
-        data_directory = '/home1/varunk/data/ABIDE1/RawDataBIDs'
+        data_directory = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
         layout = BIDSLayout(data_directory)
         metadata = layout.get_metadata(path=in_file)
         print(metadata)
