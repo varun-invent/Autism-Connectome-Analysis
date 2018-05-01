@@ -128,7 +128,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     #     Remember that all the necesary imports need to be INSIDE the function for the Function Interface to work!
         from bids.grabbids import BIDSLayout
 
-        layout = BIDSLayout(data_dir)
+        layout = BIDSLayout(data_dir) # TODO takes lot of time to execute. Move it out in the next version
         run = 1
         session = 1
 
