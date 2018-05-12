@@ -138,7 +138,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
             func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session, run=run, extensions=['nii', 'nii.gz'])]
 
         else:
-            anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w',  run=run, extensions=['nii', 'nii.gz'])]
+            anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w' , extensions=['nii', 'nii.gz'])]
             func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
 
 
@@ -162,8 +162,16 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     def get_TR(in_file):
         from bids.grabbids import BIDSLayout
+        import json
 
-        data_directory = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+        json_path = 'scripts/json/paths.json'
+
+        with open(json_path, 'rt') as fp:
+            task_info = json.load(fp)
+        data_directory = task_info["data_directory"]
+
+
+        # data_directory = '/home1/shared/ABIDE_1/UM_1'
         layout = BIDSLayout(data_directory)
         metadata = layout.get_metadata(path=in_file)
         TR  = metadata['RepetitionTime']
@@ -173,20 +181,34 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     # ---------------- Added new Node to return TR and other slice timing correction params-------------------------------
     def _getMetadata(in_file):
         from bids.grabbids import BIDSLayout
-        import logging
+        import json
 
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
+        json_path = 'scripts/json/paths.json'
 
-        # create a file handler
-        handler = logging.FileHandler('progress.log')
+        with open(json_path, 'rt') as fp:
+            task_info = json.load(fp)
+        data_directory = task_info["data_directory"]
 
-        # add the handlers to the logger
-        logger.addHandler(handler)
+
+
+        # import logging
+        #
+        # logger = logging.getLogger(__name__)
+        # logger.setLevel(logging.DEBUG)
+        #
+        # # create a file handler
+        # handler = logging.FileHandler('progress.log')
+        #
+        # # add the handlers to the logger
+        # logger.addHandler(handler)
+
+
+
 
         interleaved = True
         index_dir = False
-        data_directory = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+        # data_directory = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+        # data_directory = '/home1/shared/ABIDE_1/UM_1'
         layout = BIDSLayout(data_directory)
         metadata = layout.get_metadata(path=in_file)
         print(metadata)
