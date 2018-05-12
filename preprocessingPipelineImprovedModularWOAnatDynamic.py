@@ -130,10 +130,17 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         layout = BIDSLayout(data_dir) # TODO takes lot of time to execute. Move it out in the next version
         run = 1
-        session = 1
 
-        anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', session = session, run=run, extensions=['nii', 'nii.gz'])]
-        func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session, run=run, extensions=['nii', 'nii.gz'])]
+        session = 0
+
+        if session != 0:
+            anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', session = session, run=run, extensions=['nii', 'nii.gz'])]
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session, run=run, extensions=['nii', 'nii.gz'])]
+
+        else:
+            anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w',  run=run, extensions=['nii', 'nii.gz'])]
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+
 
         if len(func_file_path)  == 0:
             print('Error with subject ID %s' % subject_id )

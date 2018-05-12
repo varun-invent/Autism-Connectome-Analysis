@@ -25,7 +25,8 @@ s = opj('/',*s) # *s converts list to path, # very important to add '/' in the b
 
 # New path to store results:
 
-results_path = '/mnt/project1/home1/varunk/results/'
+# results_path = '/mnt/project1/home1/varunk/results/'
+results_path = '/home1/shared/ABIDE_1_UM_1_preprocessed/'
 
 
 json_path = 'scripts/json/paths.json'
@@ -114,11 +115,13 @@ if number_of_subjects == -1:
 
 bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', '28712', '28713', '28741', '28745',  '28751', '28755', '28756', '28757', '28758',
 '28759', '28761', '28762','28763', '28764','28765','28766','28767','28768','28769','28770','28771','28772','28773','28774','28775','28776','28777','28778','28779',
-'28780','28781','28782','28783'
+'28780','28781','28782','28783','29622'
 ]
 
-bugs = bugs_abide2
+bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
 
+# bugs = bugs_abide1
+bugs = []
 subject_list = (layout.get_subjects())[0:number_of_subjects]
 # subject_list = list(map(int, subject_list))
 
@@ -127,6 +130,7 @@ subject_list = list(set(subject_list) - set(bugs))
 
 subject_list.sort()
 
+print(subject_list)
 
 
 
