@@ -26,7 +26,7 @@ s = opj('/',*s) # *s converts list to path, # very important to add '/' in the b
 # New path to store results:
 
 # results_path = '/mnt/project1/home1/varunk/results/'
-results_path = '/home1/shared/ABIDE_1_UM_1_preprocessed/'
+results_path = '/home1/varunk/'
 
 
 json_path = 'scripts/json/paths.json'
@@ -120,8 +120,8 @@ bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', 
 
 bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
 
-# bugs = bugs_abide1
-bugs = []
+bugs = bugs_abide1
+# bugs = []
 subject_list = (layout.get_subjects())[0:number_of_subjects]
 # subject_list = list(map(int, subject_list))
 
@@ -173,9 +173,9 @@ fdr_results_dir,
 score_corr_dir
 ]
 
-PREPROC = 1
-POSTPROC = 1
-HYPOTEST = 0
+PREPROC = 0
+POSTPROC = 0
+HYPOTEST = 1
 FDRES = 0
 SCORE_CORR = 0
 
@@ -185,7 +185,7 @@ applyFisher = True
 # itr = (list(itertools.product([0, 1], repeat=3)))
 # itr = [(1,1,1,1,1)]
 # itr = [(1,0,1,1,1)]
-itr = [(0,0,1,1,0)]
+itr = [(1,0,1,1,0)]
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
