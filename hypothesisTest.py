@@ -158,6 +158,18 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
         #
 
 
+        # Kabir ko chaie------
+
+        # df_td = df_phenotype.loc[(df_phenotype['DX_GROUP'] == 2)]
+        #
+        #
+        # df_aut = df_phenotype.loc[(df_phenotype['DSM_IV_TR'] == 1)]
+        #
+        # df_aut_lt18_m = df_aut # just to make the later code work
+        # df_td_lt18_m = df_td
+
+        #  -------------------
+
 
         # Age 6 - 18 Autistic vs Healthy
 
@@ -248,11 +260,11 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
             # matched_df_AUT = df_phenotype
             df_td_lt18_m, df_aut_lt18_m = matching.age_matching(age_bins, df_td_lt18_m, df_aut_lt18_m)
 
-            df_aut = df_aut_lt18_m
-            df_td = df_td_lt18_m
+        df_aut = df_aut_lt18_m
+        df_td = df_td_lt18_m
 
-            df_aut_subid = df_aut.as_matrix(columns=['SUB_ID'])
-            df_td_subid = df_td.as_matrix(columns=['SUB_ID'])
+        df_aut_subid = df_aut.as_matrix(columns=['SUB_ID'])
+        df_td_subid = df_td.as_matrix(columns=['SUB_ID'])
 
 
 
@@ -337,10 +349,10 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     save_destination_AUT = opj(hypothesis_test_dir,combination,'AUT_subjects.csv')
 
     print("Storing the subjects' information used")
-    # df_td_lt18_m.to_csv('TD_subects.csv')
+
     df_td.to_csv(save_destination_TD)
     print('Saved TD_subects.csv')
-    # df_aut_lt18_m.to_csv('AUT_subjects.csv')
+
     df_aut.to_csv(save_destination_AUT)
     print('Saved AUT_subects.csv')
 
@@ -369,6 +381,14 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
     autistic_list = autistic_list#[0:participants_considered]
     td_list = td_list#[0:participants_considered]
+
+    save_destination_TD = opj(hypothesis_test_dir,combination,'TD_subects_filepath.txt')
+    save_destination_AUT = opj(hypothesis_test_dir,combination,'AUT_subjects_filepath.txt')
+
+    np.savetxt(save_destination_TD,td_list,delimiter='/n', fmt='%s')
+    np.savetxt(save_destination_AUT,autistic_list,delimiter='/n', fmt='%s')
+
+
 
     # Created the below mask manually using BET
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample_mask.nii.gz')
