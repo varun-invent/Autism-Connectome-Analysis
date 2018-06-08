@@ -77,7 +77,7 @@ import pandas as pd
 # MNI3mm_path = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample.nii')
 
 def main(paths, vols, motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, \
-smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy = 1 ):
+smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy = 0 ):
     json_path=paths[0]
     base_directory=paths[1]
     motion_correction_bet_directory=paths[2]
@@ -175,6 +175,7 @@ def volumeCorrect(subject_list, phenotype_file_path = None, demographics_file_pa
     # Delete the site index which has volume < vols
 
     if vols == None:
+        print('Performing volume correction with DEFAULT number of volumes: %s '%vols)
         vols = 120
 
 
