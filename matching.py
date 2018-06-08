@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+from os.path import join as opj
 
 
 # ### Matching based on Volumes
@@ -169,7 +170,7 @@ def matching(bins, bins_TD_data, bins_AUT_data, randomize = False):
 # In[151]:
 
 
-def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype ):
+def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype, base_directory ):
 #     age_bins = np.array([[0,9],[9,12],[12,15],[15,18]])
 
     bins_age_AUT_data = []
@@ -177,6 +178,11 @@ def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype ):
 
     # for counter, _bin in enumerate(age_bins):
 
+    log_path = opj(base_directory,"log.txt")
+    log = open(log_path, 'a')
+    log.write("------------- Age Matching with the following bins -------------\n")
+    log.write("Age Bins: %s \n"%age_bins)
+    log.flush()
 
 
     for age in age_bins:
@@ -232,9 +238,15 @@ def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype ):
 # In[153]:
 
 
-def tr_matching(TR_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype ):
+def tr_matching(TR_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype, base_directory ):
     # df_demographics = pd.read_csv(demographics_file_path)
     df_demographics_TR = df_demographics.as_matrix(['SITE_NAME','TR']).squeeze()
+
+    log_path = opj(base_directory,"log.txt")
+    log = open(log_path, 'a')
+    log.write("------------- TR Matching with the following bins -------------\n")
+    log.write("TR Bins: %s \n"%TR_bins)
+    log.flush()
 
 
 
