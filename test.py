@@ -2,10 +2,15 @@
 
 # 1. Find how many subjects doesn't have anatomical files of run=1, session=1
 # 2. Get the metadata for a given in_file. It is used to check if the metadata is being fetched up correctly or not.
+# 3. Checks if the corresponding brain npy files are same or not.
+# 4. Checks if the corresponding brain nii files are same or not.
 
 from bids.grabbids import BIDSLayout
+import numpy as np
+import nibabel as nib
+from tqdm import tqdm
 
-TEST = 1
+TEST = 4
 
 ################################################################################################################
                                              # Test 1
@@ -57,6 +62,112 @@ if TEST == 2:
 
     print('Metadata:')
     print(metadata)
+
+
+################################################################################################################
+                                             # Test 3
+################################################################################################################
+
+if TEST == 3:
+    in_file1 = np.load('../resultsABIDE_verifyCode/fc_datasink/motionRegress1global0smoothing1filt1/fc_map_npy_file_list.npy')
+    in_file2 = np.load('../resultsABIDE_verifyCode2/fc_datasink/motionRegress1global0smoothing1filt1/fc_map_npy_file_list.npy')
+
+    # in_file1 = np.load('../resultsABIDE_verifyCode/preprocess/_subject_id_0050774/mcflirt/sub-0050774_task-rest_run-1_bold_roi_st_mcf.nii')
+    # in_file2 = np.load('../resultsABIDE_verifyCode2/preprocess/_subject_id_0050774/mcflirt/sub-0050774_task-rest_run-1_bold_roi_st_mcf.nii')
+
+    # in_file1 = '../resultsABIDE_verifyCode/hypothesis_test/motionRegress1global0smoothing1filt1/Tvals.npy'
+    # in_file2 = '../resultsABIDE_verifyCode2/hypothesis_test/motionRegress1global0smoothing1filt1/Tvals.npy'
+
+    # volume = None
+
+    # import pdb;pdb.set_trace()
+    volume = 20
+    slice = 30
+
+    if isinstance(in_file1, np.ndarray):
+        for file1, file2 in zip(in_file1,in_file2):
+            # print('File 1: %s and File 2: %s'%(file1,file2))
+            # brain1 = nib.load(file1).get_data()
+            # brain2 = nib.load(file2).get_data()
+
+            brain1 = np.load(file1,mmap_mode = 'r+')
+            brain2 = np.load(file2,mmap_mode = 'r+')
+
+            # import pdb; pdb.set_trace()
+            brain1_slice = np.diag(brain1[:,:,slice,volume])
+            brain2_slice = np.diag(brain2[:,:,slice,volume])
+
+            import pdb;pdb.set_trace()
+            if (brain1_slice == brain2_slice).all() :
+                print('All slices are same')
+            else:
+                print('Brain Slices different - %s %s'%(file1,file2))
+
+    else:
+        brain1 = np.load(in_file1, mmap_mode = 'r+')
+        brain2 = np.load(in_file2, mmap_mode = 'r+')
+
+        brain1_slice = np.diag(brain1[:,:,slice,volume])
+        brain2_slice = np.diag(brain2[:,:,slice,volume])
+
+        if (brain1_slice == brain2_slice).all() :
+            print('All slices are same')
+        else:
+            print('Brain Slices different - %s %s'%(in_file1,in_file2))
+
+
+
+################################################################################################################
+                                             # Test 4
+################################################################################################################
+
+if TEST == 4:
+    # in_file1 = np.load('../resultsABIDE_verifyCode/fc_datasink/motionRegress1global0smoothing1filt1/fc_map_npy_file_list.npy')
+    # in_file2 = np.load('../resultsABIDE_verifyCode2/fc_datasink/motionRegress1global0smoothing1filt1/fc_map_npy_file_list.npy')
+
+    in_file1 = '../resultsABIDE_verifyCode/preprocess/_subject_id_0051277/mcflirt/sub-0051277_task-rest_run-1_bold_roi_st_mcf.nii'
+    in_file2 = '../resultsABIDE_verifyCode2/preprocess/_subject_id_0051277/mcflirt/sub-0051277_task-rest_run-1_bold_roi_st_mcf.nii'
+
+    # in_file1 = '../resultsABIDE_verifyCode/hypothesis_test/motionRegress1global0smoothing1filt1/Tvals.npy'
+    # in_file2 = '../resultsABIDE_verifyCode2/hypothesis_test/motionRegress1global0smoothing1filt1/Tvals.npy'
+
+    # volume = None
+
+    # import pdb;pdb.set_trace()
+    volume = 20
+    slice = 30
+
+    if isinstance(in_file1, np.ndarray):
+        for file1, file2 in zip(in_file1,in_file2):
+            # print('File 1: %s and File 2: %s'%(file1,file2))
+            # brain1 = nib.load(file1).get_data()
+            # brain2 = nib.load(file2).get_data()
+
+            brain1 = nib.load(file1).get_data()
+            brain2 = nib.load(file2).get_data()
+
+            # import pdb; pdb.set_trace()
+            brain1_slice = np.diag(brain1[:,:,slice,volume])
+            brain2_slice = np.diag(brain2[:,:,slice,volume])
+
+            import pdb;pdb.set_trace()
+            if (brain1_slice == brain2_slice).all() :
+                print('All slices are same')
+            else:
+                print('Brain Slices different - %s %s'%(file1,file2))
+
+    else:
+        brain1 = nib.load(in_file1).get_data()
+        brain2 = nib.load(in_file2).get_data()
+
+        brain1_slice = np.diag(brain1[:,:,slice,volume])
+        brain2_slice = np.diag(brain2[:,:,slice,volume])
+
+        if (brain1_slice == brain2_slice).all() :
+            print('All slices are same')
+        else:
+            print('Brain Slices different - %s %s'%(in_file1,in_file2))
+
 
 
 
