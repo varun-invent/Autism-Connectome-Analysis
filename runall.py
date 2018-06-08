@@ -12,10 +12,20 @@ from os.path import join as opj
 import itertools
 from bids.grabbids import BIDSLayout
 import time
-
-
+from pathlib import Path
+import numpy as np
 
 # ------------- Paths ----------------------------------------------------------------------------------------
+
+# New path to store results:
+results_path = '/mnt/scratch/varunk/'
+
+# results_path = '/mnt/project1/home1/varunk/results/'
+
+SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
+number_of_selected_subjects = 80
+
+# ----------------------------------------Don't Modify ------------------------------------------------------------
 
 
 path_cwd = os.getcwd()
@@ -23,17 +33,11 @@ path_split_list = path_cwd.split('/')
 s = path_split_list[0:-1] # for getting to the parent dir of pwd
 s = opj('/',*s) # *s converts list to path, # very important to add '/' in the begining so it is read as directory later
 
-# New path to store results:
-
-# results_path = '/mnt/project1/home1/varunk/results/'
-results_path = '/home1/varunk/'
 
 
 json_path = 'scripts/json/paths.json'
 with open(json_path, 'rt') as fp:
     task_info = json.load(fp)
-
-
 
 base_directory = opj(results_path,task_info["base_directory_for_results"])
 motion_correction_bet_directory = task_info["motion_correction_bet_directory"]
@@ -90,26 +94,23 @@ log.flush()
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 vols = 120 # needed for volume matching. Tells how many volumes you need to keep.
-number_of_skipped_volumes = 4
+number_of_skipped_volumes = 4 # TODO: Hardcoded inside preprocessing code: Make it dynamic in v2
 #  True volumes will be vols - number_of_skipped_volumes
 
 
 num_proc = 7
 
 
-number_of_subjects = -1
+# number_of_subjects = -1
 # number_of_subjects = 7 # Number of subjects you wish to work with
 
-log.write("Vols for matching: %s\n"%(vols))
-log.write("Number_of_skipped_volumes: %s\n"%(number_of_skipped_volumes))
-log.flush()
 # ----------------------------- Getting Subjects -------------------------------
 # ----------------------------------- BIDS -------------------------------------
 layout = BIDSLayout(data_directory)
 
 
-if number_of_subjects == -1:
-    number_of_subjects = len(layout.get_subjects())
+# if number_of_subjects == -1:
+#     number_of_subjects = len(layout.get_subjects())
 
 # ABIDE II Bugs
 
@@ -118,16 +119,33 @@ bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', 
 '28780','28781','28782','28783','29622'
 ]
 
-bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
+bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276', '50774','51276','0050313', '0051195']
 
 bugs = bugs_abide1
 # bugs = []
-subject_list = (layout.get_subjects())[0:number_of_subjects]
+# subject_list = (layout.get_subjects())[0:number_of_subjects]
 # subject_list = list(map(int, subject_list))
+subject_list = layout.get_subjects()
 
 # Ignore Bugs
 subject_list = list(set(subject_list) - set(bugs))
 
+# ----------------------------  Select 30 % of subjects ------------------
+# import pdb; pdb.set_trace()
+if SELECT_SUBJECTS == True:
+    sub_list_filename = opj(base_directory,'sub_list.npy')
+
+
+    if Path(sub_list_filename).exists():
+        subject_list = np.load(sub_list_filename)
+        print('Using the previously defined subject list')
+    else:
+        print('Creating a new subject list')
+        index = np.arange(len(subject_list))
+        np.random.shuffle(index)
+        subject_list = subject_list[0:number_of_selected_subjects]
+        np.save(sub_list_filename, subject_list)
+# ------------------------------------------------------------------------
 subject_list.sort()
 
 print(subject_list)
@@ -173,19 +191,19 @@ fdr_results_dir,
 score_corr_dir
 ]
 
-PREPROC = 0
-POSTPROC = 0
+PREPROC = 1
+POSTPROC = 1
 HYPOTEST = 1
-FDRES = 0
+FDRES = 1
 SCORE_CORR = 0
 
-match = 0 # Age matching
+match = 1 # Age matching
 applyFisher = True
 
 # itr = (list(itertools.product([0, 1], repeat=3)))
 # itr = [(1,1,1,1,1)]
-# itr = [(1,0,1,1,1)]
-itr = [(1,0,1,1,0)]
+# itr = [(1,0,0,0,0)]
+itr = [(1,0,1,1,1)]
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
@@ -193,28 +211,36 @@ log.write("Postprocess = %s\n"%(POSTPROC))
 log.write("Hypothesis Test = %s\n"%(HYPOTEST))
 log.write("FDR correction and Vizualization = %s\n"%(FDRES))
 log.write("Score-Connectivity Correlation  = %s\n"%(SCORE_CORR))
+if SELECT_SUBJECTS == True:
+    log.write("Working with only %s Subjects selected randomly\n "%(number_of_selected_subjects))
+    # number_of_selected_subjects = 80
 log.flush()
 
 # ---------------------- Preprocess --------------------------------------------
 
 ANAT = 1
 
-itr_preproc = [1,1,0,1]
+itr_preproc = [1,1,1,1]
 # itr_preproc = [0,0,0]
 extract, slicetimer,motionOutliers, mcflirt= list(map(str, itr_preproc))
 options_binary_string = extract+slicetimer+motionOutliers+mcflirt
 
-log.write("Preprocessing Params\n")
-log.write("Remove begining slices  = %s\n"%(extract))
-log.write("Slice time correction  = %s\n"%(slicetimer))
-log.write("Calculate motionOutliers  = %s\n"%(motionOutliers))
-log.write("Do motion correction using McFLIRT  = %s\n"%(mcflirt))
 
-log.flush()
+# print('Calculating the BIDS data layout:')
+# layout = BIDSLayout(data_directory) # TODO ( GIT Push)  Taken out as it takes lot of time to execute.
 
 
 if PREPROC == 1:
     print('Preprocessing')
+
+    log.write("Preprocessing Params\n")
+    log.write("Remove begining slices  = %s\n"%(extract))
+    log.write("Slice time correction  = %s\n"%(slicetimer))
+    log.write("Calculate motionOutliers  = %s\n"%(motionOutliers)) # has a bug
+    log.write("Do motion correction using McFLIRT  = %s\n"%(mcflirt))
+
+    log.flush()
+
     prep.main(paths,options_binary_string, ANAT, num_proc)
 
 
@@ -229,6 +255,11 @@ if POSTPROC == 1:
         log.write("smoothing  = %s\n"%(smoothing))
         log.write("band_pass_filtering  = %s\n"%(band_pass_filtering))
         log.write("volCorrect  = %s\n"%(volCorrect))
+        if volCorrect == 1:
+            log.write("Vols for matching: %s\n"%(vols))
+        log.write("Number_of_skipped_volumes: %s\n"%(number_of_skipped_volumes))
+        log.write("Fisher Transform = %s\n"%(applyFisher))
+        log.flush()
 
 
 
@@ -245,7 +276,7 @@ if POSTPROC == 1:
 
 # ------------------- Hypothesis Test ------------------------------------------
 # ABIDE1 BUGS
-bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
+# bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
 
 if HYPOTEST == 1:
     print('Hypothesis Test')
