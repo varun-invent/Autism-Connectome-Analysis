@@ -129,6 +129,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         from bids.grabbids import BIDSLayout
 
         layout = BIDSLayout(data_dir) # TODO takes lot of time to execute. Move it out in the next version
+        # DEBUG Tried moving out. gave deep copy error..
         run = 1
 
         session = 0
@@ -160,34 +161,34 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     # ## Return TR
 
-    def get_TR(in_file):
-        from bids.grabbids import BIDSLayout
-        import json
-
-        json_path = 'scripts/json/paths.json'
-
-        with open(json_path, 'rt') as fp:
-            task_info = json.load(fp)
-        data_directory = task_info["data_directory"]
-
-
-        # data_directory = '/home1/shared/ABIDE_1/UM_1'
-        layout = BIDSLayout(data_directory)
-        metadata = layout.get_metadata(path=in_file)
-        TR  = metadata['RepetitionTime']
-        return TR
+    # def get_TR(in_file):
+    #     from bids.grabbids import BIDSLayout
+    #     import json
+    #
+    #     json_path = 'scripts/json/paths.json'
+    #
+    #     with open(json_path, 'rt') as fp:
+    #         task_info = json.load(fp)
+    #     data_directory = task_info["data_directory"]
+    #
+    #
+    #     # data_directory = '/home1/shared/ABIDE_1/UM_1'
+    #     layout = BIDSLayout(data_directory)
+    #     metadata = layout.get_metadata(path=in_file)
+    #     TR  = metadata['RepetitionTime']
+    #     return TR
 
 
     # ---------------- Added new Node to return TR and other slice timing correction params-------------------------------
-    def _getMetadata(in_file):
+    def _getMetadata(in_file, data_directory):
         from bids.grabbids import BIDSLayout
         import json
 
-        json_path = 'scripts/json/paths.json'
-
-        with open(json_path, 'rt') as fp:
-            task_info = json.load(fp)
-        data_directory = task_info["data_directory"]
+        # json_path = 'scripts/json/paths.json'
+        #
+        # with open(json_path, 'rt') as fp:
+        #     task_info = json.load(fp)
+        # data_directory = task_info["data_directory"]
 
 
 
@@ -213,17 +214,14 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         metadata = layout.get_metadata(path=in_file)
         print(metadata)
 
-        logger.info('Extracting Meta Data of file: %s',in_file)
         try: tr  = metadata['RepetitionTime']
         except KeyError:
             print('Key RepetitionTime not found in task-rest_bold.json so using a default of 2.0 ')
             tr = 2
-            logger.error('Key RepetitionTime not found in task-rest_bold.json for file %s so using a default of 2.0 ', in_file)
 
         try: slice_order = metadata['SliceAcquisitionOrder']
         except KeyError:
             print('Key SliceAcquisitionOrder not found in task-rest_bold.json so using a default of interleaved ascending ')
-            logger.error('Key SliceAcquisitionOrder not found in task-rest_bold.json for file %s so using a default of interleaved ascending', in_file)
             return tr, index_dir, interleaved
 
 
@@ -235,8 +233,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         return tr, index_dir, interleaved
 
 
-    getMetadata = Node(Function(function=_getMetadata, input_names=['in_file'],
+    getMetadata = Node(Function(function=_getMetadata, input_names=['in_file','data_directory'],
                                     output_names=['tr','index_dir','interleaved']), name='getMetadata')
+    getMetadata.inputs.data_directory = data_directory
 
     # ### Skipping 4 starting scans
     # Extract ROI for skipping first 4 scans of the functional data
