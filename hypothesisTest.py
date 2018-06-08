@@ -14,6 +14,7 @@ import numpy as np
 import matching
 import pandas as pd
 import ttest as tt
+import extract_subjects as es
 
 
 # Now construct a function that takes a list of SUB_ID's and returns the FC Maps
@@ -144,8 +145,8 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
 
         df_demographics = pd.read_csv(demographics_file_path)
-        df_phenotype = pd.read_csv(phenotype_file_path)
-        df_phenotype = df_phenotype.sort_values(['SUB_ID'])
+        # df_phenotype = pd.read_csv(phenotype_file_path)
+        # df_phenotype = df_phenotype.sort_values(['SUB_ID'])
 
 
 
@@ -173,13 +174,18 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
         # Age 6 - 18 Autistic vs Healthy
 
-        df_td_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DX_GROUP'] == 2) \
-                                                            & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
+        # df_td_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DX_GROUP'] == 2) \
+        #                                                     & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
+        #
+        #
+        # df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
+        #                                                     & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
 
+        criteria_dict = {'SEX' : 1,'DX_GROUP' : 2, 'EYE_STATUS_AT_SCAN' : 1}
+        df_td_lt18_m= es.extract(phenotype_file_path, base_directory,criteria_dict)
 
-        df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
-                                                            & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
-
+        criteria_dict = {'SEX' : 1,'DSM_IV_TR' : 2, 'EYE_STATUS_AT_SCAN' : 1}
+        df_aut_lt18_m= es.extract(phenotype_file_path, base_directory,criteria_dict)
 
         # Age 6 - 18 Aspergers vs Healthy
 
@@ -250,7 +256,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
             # matched_df_TD = df_phenotype
             # matched_df_AUT = df_phenotype
-            df_td_lt18_m, df_aut_lt18_m = matching.tr_matching(TR_bins,df_demographics, df_td_lt18_m, df_aut_lt18_m)
+            df_td_lt18_m, df_aut_lt18_m = matching.tr_matching(TR_bins,df_demographics, df_td_lt18_m, df_aut_lt18_m, base_directory)
 
 
             # Age Matching
@@ -258,7 +264,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
             age_bins = np.array([[0,9],[9,12],[12,15],[15,18]])
             # matched_df_TD = df_phenotype
             # matched_df_AUT = df_phenotype
-            df_td_lt18_m, df_aut_lt18_m = matching.age_matching(age_bins, df_td_lt18_m, df_aut_lt18_m)
+            df_td_lt18_m, df_aut_lt18_m = matching.age_matching(age_bins, df_td_lt18_m, df_aut_lt18_m, base_directory)
 
         df_aut = df_aut_lt18_m
         df_td = df_td_lt18_m
