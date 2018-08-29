@@ -770,9 +770,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         wf_coreg_reg.connect(func2anat_reg, 'out_matrix_file', wf_atlas_resize_reg,'inv_mat.in_file')
 
 
-    (save_file_list_in_joint_xformation_matrix, dataSink,
-     [('out_joint_xformation_matrix',
-     'joint_xformation_matrix_paths.@out_joint_xformation_matrix')])
+    wf_coreg_reg.connect(
+    save_file_list_in_joint_xformation_matrix, 'out_joint_xformation_matrix',
+    dataSink, 'joint_xformation_matrix_paths.@out_joint_xformation_matrix')
 
 
 
