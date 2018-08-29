@@ -71,8 +71,8 @@ fdr_results_dir = task_info["fdr_results_dir"]
 
 score_corr_dir =  opj(base_directory,task_info["score_corr_dir"])
 
-demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
-phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+demographics_file_path = task_info['demographics_file_path']
+phenotype_file_path = task_info['phenotype_file_path']
 # categoryInfo = '/home1/varunk/data/NYU_Cocaine-BIDS/grouping.csv'
 categoryInfo = None
 
@@ -193,9 +193,9 @@ fdr_results_dir,
 score_corr_dir
 ]
 
-PREPROC = 1
+PREPROC = 0
 POSTPROC = 0
-HYPOTEST = 0
+HYPOTEST = 1
 FDRES = 0
 SCORE_CORR = 0
 
@@ -222,8 +222,8 @@ log.flush()
 
 ANAT = 1
 
-# itr_preproc = [1,1,0,1]
-itr_preproc = [0,0,0,0]
+itr_preproc = [1,1,0,1]
+# itr_preproc = [0,0,0,0]
 extract, slicetimer,motionOutliers, mcflirt= list(map(str, itr_preproc))
 options_binary_string = extract+slicetimer+motionOutliers+mcflirt
 
