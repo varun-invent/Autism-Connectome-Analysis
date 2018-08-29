@@ -673,18 +673,35 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     # ---------------------------Save the required files --------------------------------------------
 
-    wf_atlas_resize_reg.connect([(save_file_list_in_motion_params, dataSink, [('out_motion_params','motion_params_paths.@out_motion_params')])])
 
-    if motionOutliersOption == 1:
-        wf_atlas_resize_reg.connect([(save_file_list_in_motion_outliers, dataSink, [('out_motion_outliers','motion_outliers_paths.@out_motion_outliers')])])
+    # wf_atlas_resize_reg.connect([(save_file_list_in_motion_params, dataSink, [('out_motion_params','motion_params_paths.@out_motion_params')])])
 
-    wf_atlas_resize_reg.connect([(save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')])])
-    wf_atlas_resize_reg.connect([(save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')])])
+    # if motionOutliersOption == 1:
+        # wf_atlas_resize_reg.connect([(save_file_list_in_motion_outliers, dataSink, [('out_motion_outliers','motion_outliers_paths.@out_motion_outliers')])])
 
-    wf_atlas_resize_reg.connect([(save_file_list_in_joint_xformation_matrix, dataSink, [('out_joint_xformation_matrix',
-                                 'joint_xformation_matrix_paths.@out_joint_xformation_matrix')])])
+    # Move the below statements to the respective workflows
 
-    wf_atlas_resize_reg.connect([(save_file_list_in_tr, dataSink, [('out_tr','tr_paths.@out_tr')])])
+    # Lesson learnt: A node inside a workflow (let's say WF_1) is not a global entity. That is, to direct output of that node to a datasink (which is a global entity), the .connect() should
+      # be written in that workflow only and will not work .connect() is written in some other workflow.
+    """
+    Lesson learnt: (Specific to nested workflows)
+    A node (let's say N_1) inside a workflow (let's say WF_1) is
+    not a global entity. That is, to direct the output of that node (N_1) to
+    a datasink (which is a global entity), the
+    .connect(N_1, 'Output' ,DataSink, 'Input') should be written in that
+    workflow only, i.e. WF_1.connect(N_1, 'Output' ,DataSink, 'Input').
+    And will not work if .connect(N_1,_,_,_) is written in some other
+    workflow. I was writing all the datasink .connect() statements in a
+    different workflow that was nested in WF_1.
+"""
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')])])
+    # wf_atlas_resize_reg.connect([(save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')])])
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_joint_xformation_matrix, dataSink, [('out_joint_xformation_matrix',
+    #                              'joint_xformation_matrix_paths.@out_joint_xformation_matrix')])])
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_tr, dataSink, [('out_tr','tr_paths.@out_tr')])])
 
     wf_atlas_resize_reg.connect([(save_file_list_in_atlas, dataSink, [('out_atlas','atlas_paths.@out_atlas')])])
 
@@ -753,7 +770,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         wf_coreg_reg.connect(func2anat_reg, 'out_matrix_file', wf_atlas_resize_reg,'inv_mat.in_file')
 
 
-
+    (save_file_list_in_joint_xformation_matrix, dataSink,
+     [('out_joint_xformation_matrix',
+     'joint_xformation_matrix_paths.@out_joint_xformation_matrix')])
 
 
 
@@ -792,6 +811,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
                 (applyMask, save_file_list_in_brain, [('out_file', 'in_brain')]),
                 (applyMask, save_file_list_in_mask, [('out_file2', 'in_mask')]),
+
+                (save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')]),
+                (save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')]),
 
 
 
@@ -857,6 +879,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     wf.connect(infosource,'subject_id', BIDSDataGrabber,'subject_id')
     wf.connect(BIDSDataGrabber, 'func_file_path', getMetadata, 'in_file')
     wf.connect(getMetadata, 'tr', save_file_list_in_tr,'in_tr')
+    wf.connect(save_file_list_in_tr,'out_tr', dataSink,'tr_paths.@out_tr')
 
     old_node = BIDSDataGrabber
     old_node_output = 'func_file_path'
@@ -891,22 +914,38 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                 new_node_input = 'in_file'
                 wf.connect(mcflirt,'par_file',dataSink,'motion_params.@par_file') # saves the motion parameters calculated before
 
-                wf.connect(mcflirt,'par_file',save_file_list_in_motion_params,'in_motion_params')
+                wf.connect(mcflirt,'par_file',
+                save_file_list_in_motion_params, 'in_motion_params')
 
-                wf.connect(mcflirt, 'out_file', wf_motion_correction_bet,'from_mcflirt.in_file')
+                wf.connect(save_file_list_in_motion_params, 'out_motion_params',
+                dataSink, 'motion_params_paths.@out_motion_params')
+
+                wf.connect(mcflirt, 'out_file',
+                wf_motion_correction_bet, 'from_mcflirt.in_file')
+
+
 
 
             elif new_node == motionOutliers:
 
-                wf.connect(meanfuncmask, 'mask_file', motionOutliers,'mask')
+                wf.connect(meanfuncmask, 'mask_file',
+                motionOutliers,'mask')
 
-                wf.connect(motionOutliers, 'out_file', dataSink,'motionOutliers.@out_file')
+                wf.connect(motionOutliers, 'out_file',
+                dataSink,'motionOutliers.@out_file')
 
-                wf.connect(motionOutliers, 'out_metric_plot', dataSink,'motionOutliers.@out_metric_plot')
+                wf.connect(motionOutliers, 'out_metric_plot',
+                dataSink,'motionOutliers.@out_metric_plot')
 
-                wf.connect(motionOutliers, 'out_metric_values', dataSink,'motionOutliers.@out_metric_values')
+                wf.connect(motionOutliers, 'out_metric_values',
+                dataSink,'motionOutliers.@out_metric_values')
 
-                wf.connect(motionOutliers, 'out_file', save_file_list_in_motion_outliers,'in_motion_outliers')
+                wf.connect(motionOutliers, 'out_file',
+                save_file_list_in_motion_outliers,'in_motion_outliers')
+
+                wf.connect(
+                save_file_list_in_motion_outliers, 'out_motion_outliers',
+                dataSink, 'motion_outliers_paths.@out_motion_outliers')
 
                 new_node_input = 'in_file'
 
