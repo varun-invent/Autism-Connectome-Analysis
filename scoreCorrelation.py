@@ -19,7 +19,7 @@ from statsmodels.sandbox.stats.multicomp import fdrcorrection0
 from functools import partial
 from multiprocessing import Pool
 import multiprocessing.managers
-from tqdm.tqdm import tqdm
+from tqdm import tqdm
 
 
 class MyManager(multiprocessing.managers.BaseManager):
