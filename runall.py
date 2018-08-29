@@ -18,11 +18,11 @@ import numpy as np
 # ------------- Paths ----------------------------------------------------------------------------------------
 
 # New path to store results:
-results_path = '/mnt/scratch/varunk/'
+# results_path = '/mnt/scratch/varunk/'
 
 # results_path = '/mnt/project1/home1/varunk/results/'
 
-SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
+SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
 number_of_selected_subjects = 80
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
@@ -39,18 +39,20 @@ json_path = 'scripts/json/paths.json'
 with open(json_path, 'rt') as fp:
     task_info = json.load(fp)
 
-base_directory = opj(results_path,task_info["base_directory_for_results"])
+base_directory = task_info["base_directory_for_results"]
 motion_correction_bet_directory = task_info["motion_correction_bet_directory"]
 parent_wf_directory = task_info["parent_wf_directory"]
 functional_connectivity_directory = task_info["functional_connectivity_directory"]
 # functional_connectivity_directory = 'temp_fc'
 coreg_reg_directory = task_info["coreg_reg_directory"]
 atlas_resize_reg_directory = task_info["atlas_resize_reg_directory"]
-data_directory = opj(s,task_info["data_directory"])
+
+data_directory = task_info["data_directory"]
+
 datasink_name = task_info["datasink_name"]
 fc_datasink_name = task_info["fc_datasink_name"]
 # fc_datasink_name = 'temp_dataSink'
-atlasPath = opj(s,task_info["atlas_path"]) # Standard Brainnetome path
+atlasPath = task_info["atlas_path"] # Standard Brainnetome path
 
 
 brain_path = opj(base_directory,datasink_name,'preprocessed_brain_paths/brain_file_list.npy')
@@ -98,7 +100,7 @@ number_of_skipped_volumes = 4 # TODO: Hardcoded inside preprocessing code: Make 
 #  True volumes will be vols - number_of_skipped_volumes
 
 
-num_proc = 7
+num_proc = 20
 
 
 # number_of_subjects = -1
@@ -192,9 +194,9 @@ score_corr_dir
 ]
 
 PREPROC = 1
-POSTPROC = 1
-HYPOTEST = 1
-FDRES = 1
+POSTPROC = 0
+HYPOTEST = 0
+FDRES = 0
 SCORE_CORR = 0
 
 match = 1 # Age matching
@@ -220,8 +222,8 @@ log.flush()
 
 ANAT = 1
 
-itr_preproc = [1,1,1,1]
-# itr_preproc = [0,0,0]
+# itr_preproc = [1,1,0,1]
+itr_preproc = [0,0,0,0]
 extract, slicetimer,motionOutliers, mcflirt= list(map(str, itr_preproc))
 options_binary_string = extract+slicetimer+motionOutliers+mcflirt
 
