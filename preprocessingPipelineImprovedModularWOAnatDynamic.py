@@ -350,7 +350,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                                                    op_string='-mas'),
                           name='maskfunc')
 
-    # Does BET (masking) on the mean func scan
+    # Does BET (masking) on the mean func scan and outputting the mask as well as masked mean functional image
     maskfunc4mean = Node(interface=ImageMaths(suffix='_bet',
                                                    op_string='-mas'),
                           name='maskfunc4mean')
@@ -812,12 +812,22 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                 (applyMask, save_file_list_in_brain, [('out_file', 'in_brain')]),
                 (applyMask, save_file_list_in_mask, [('out_file2', 'in_mask')]),
 
+
+
                 (save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')]),
                 (save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')]),
 
 
 
                 (maskfunc4mean, wf_coreg_reg, [('out_file','func2anat_reg.in_file')])
+
+                # -----------------------------------------------------------
+                 #  Connect maskfunc4mean node to FSL:FAST
+                 #  and extract the GM, WM and CSF masks.
+                 # maskfunc4mean.out_brain is the scull stripped mean functional file of a subject in
+                 #  in the subject space after the fMRI file has been volume corrected or coregistered by mcflirt.
+                 #  Then save the masks and then save the file lists as well.
+                # -----------------------------------------------------------
 
 
 
@@ -961,13 +971,14 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
             old_node = new_node
 
         else:
-            if idx == 3:
+            if idx == 3: # If No Node is attached till the end
                 # new_node = from_mcflirt
                 # new_node_input = 'from_mcflirt.in_file'
 
                 wf.connect(old_node, old_node_output, wf_motion_correction_bet,'from_mcflirt.in_file')
 
                 # old_node = new_node
+
 
 
 
@@ -981,4 +992,4 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     wf.write_graph(graph2use='flat', format='png', simple_form=True)
 
     # Run it in parallel
-    wf.run('MultiProc', plugin_args={'n_procs': num_proc})
+    # wf.run('MultiProc', plugin_args={'n_procs': num_proc})
