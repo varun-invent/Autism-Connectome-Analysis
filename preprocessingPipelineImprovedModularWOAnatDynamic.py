@@ -500,7 +500,62 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     # ### Following is a Join Node that collects the preprocessed file paths and saves them in a file
 
-    # In[902]:
+
+
+    def get_masks(resampled_anat_file_path, func2anat_mat_path, reference_func_file_path ):
+        '''
+        Returns CSF, WM and GM masks' paths
+        '''
+        fastr = FAST(segments=True,use_priors=True)
+        fastr.inputs.in_files = resampled_anat_file_path
+        fastr.inputs.out_basename = 'fast_'
+        print(fastr.cmdline)
+        out = fastr.run()
+
+        csf_path = out.outputs.tissue_class_files[0]
+        gm_path = out.outputs.tissue_class_files[1]
+        wm_path = out.outputs.tissue_class_files[2]
+
+
+        # Input the func2std tranformation matrix and invert it
+
+        # func2anat_mat_path = \
+        # '_subject_id_0050002/func2anat_reg/sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt.mat'
+
+        inv_mat = ConvertXFM(invert_xfm=True)
+
+        inv_mat.inputs.in_file  = func2anat_mat_path
+
+        res = inv_mat.run()
+
+        anat2func_mat_path = res.outputs.out_file
+
+        # Transform the above created masks to the functional space using the inverse matrix
+
+        std2func_xform = FLIRT(output_type='NIFTI',
+                                 apply_xfm=True, interp='nearestneighbour')
+
+
+        std2func_xform.inputs.reference = reference_func_file_path
+        std2func_xform.inputs.in_matrix_file = anat2func_mat_path
+
+        files = [csf_path, gm_path, wm_path]
+        out_files = []
+        for in_file in files:
+            std2func_xform.inputs.in_file = in_file
+            print(std2func_xform.cmdline)
+            flirt_out = std2func_xform.run()
+            out_files.apppend(flirt_out.outputs.out_file)
+
+        csf_mask_path = out_files[0]
+        gm_mask_path = out_files[1]
+        wm_mask_path = out_files[2]
+
+        return csf_mask_path, gm_mask_path, wm_mask_path
+
+    fast = Node(Function(function=get_masks, input_names=['resampled_anat_file_path','func2anat_mat_path','reference_func_file_path'],
+                                    output_names=['csf_mask_path','gm_mask_path','wm_mask_path']), name='fast')
+
 
 
     def save_file_list_function_in_brain(in_brain):
@@ -693,7 +748,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     And will not work if .connect(N_1,_,_,_) is written in some other
     workflow. I was writing all the datasink .connect() statements in a
     different workflow that was nested in WF_1.
-"""
+    """
 
     # wf_atlas_resize_reg.connect([(save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')])])
     # wf_atlas_resize_reg.connect([(save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')])])
@@ -754,6 +809,20 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         # Now inverse the func2std MAT to std2func
         wf_coreg_reg.connect(concat_xform, 'out_file', wf_atlas_resize_reg,'inv_mat.in_file')
+
+
+        '''
+        To get WM, CSF and GM masks
+
+        FAST v2:
+        --------
+
+        Use wf_coreg_reg.resample_anat.out_file to get the resampled anatomical file. [ DONE ]
+        Apply FAST on the resampled anatomical file to get the masks. [ TODO FAST ]
+        Use wf_coreg_reg.func2anat_reg.out_matrix_file and create a node to invert it. [TODO invert]
+        Transform the masks to the functional space using the above inverted transformation matrix. [TODO xform]
+        '''
+
 # ------------------------------------------------------------------------------------------------------------------------------
 
     # Registration of Functional to MNI 3mm space w/o using anatomical
@@ -822,11 +891,11 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                 (maskfunc4mean, wf_coreg_reg, [('out_file','func2anat_reg.in_file')])
 
                 # -----------------------------------------------------------
-                 #  Connect maskfunc4mean node to FSL:FAST
-                 #  and extract the GM, WM and CSF masks.
-                 # maskfunc4mean.out_brain is the scull stripped mean functional file of a subject in
-                 #  in the subject space after the fMRI file has been volume corrected or coregistered by mcflirt.
-                 #  Then save the masks and then save the file lists as well.
+                #   Connect maskfunc4mean node to FSL:FAST
+                #   and extract the GM, WM and CSF masks.
+                #  maskfunc4mean.out_brain is the scull stripped mean functional file of a subject in
+                #   in the subject space after the fMRI file has been volume corrected or coregistered by mcflirt.
+                #   Then save the masks and then save the file lists as well.
                 # -----------------------------------------------------------
 
 
