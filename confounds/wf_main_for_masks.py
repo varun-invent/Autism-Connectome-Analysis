@@ -147,43 +147,43 @@ def get_wf_main(name='wf_main'):
 
 
 # --------------------------------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    wf_main = get_wf_main(name='wf_main')
 
-wf_main = get_wf_main(name='wf_main')
+    wf_main.inputs.inputspec.resampled_anat_file_path = \
+    '/mnt/project1/home1/varunk/fMRI/testScripts/_subject_id_0050002/resample_anat/sub-0050002_T1w_brain_resample.nii'
 
-wf_main.inputs.inputspec.resampled_anat_file_path = \
-'/mnt/project1/home1/varunk/fMRI/testScripts/_subject_id_0050002/resample_anat/sub-0050002_T1w_brain_resample.nii'
+    wf_main.inputs.inputspec.reference_func_file_path = \
+    '/mnt/project1/home1/varunk/fMRI/testScripts/func_subject_id_0050002/applyMask/sub-0050002_task-rest_run-1_bold_roi_st_mcf.nii_brain.nii.gz'
 
-wf_main.inputs.inputspec.reference_func_file_path = \
-'/mnt/project1/home1/varunk/fMRI/testScripts/func_subject_id_0050002/applyMask/sub-0050002_task-rest_run-1_bold_roi_st_mcf.nii_brain.nii.gz'
+    wf_main.inputs.inputspec.func2anat_mat_path = \
+    '/mnt/project1/home1/varunk/fMRI/results/resultsABIDE1/preprocess/'+\
+    'motion_correction_bet/coreg_reg/_subject_id_0050002/func2anat_reg/'+\
+    'sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt.mat'
 
-wf_main.inputs.inputspec.func2anat_mat_path = \
-'/mnt/project1/home1/varunk/fMRI/results/resultsABIDE1/preprocess/'+\
-'motion_correction_bet/coreg_reg/_subject_id_0050002/func2anat_reg/'+\
-'sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt.mat'
-
-wf_main.inputs.inputspec.std2func_mat_path = \
-'/mnt/project1/home1/varunk/fMRI/results/resultsABIDE1/preprocess/'+\
-'motion_correction_bet/coreg_reg/atlas_resize_reg_directory/_subject_id_0050002/'+\
-'std2func_xform/fullbrain_atlas_thr0-2mm_resample_flirt.mat'
-
-
-# wf_tissue_masks.inputs.inputspec.tissue_prior_csf_path = '/mnt/project1/home1/varunk/fMRI/testScripts/results/wf_tissue_priors/threshold_csf/avg152T1_csf_resample_thresh.nii.gz'
-# wf_tissue_masks.inputs.inputspec.tissue_prior_wm_path = '/mnt/project1/home1/varunk/fMRI/testScripts/results/wf_tissue_priors/threshold_wm/avg152T1_white_resample_thresh.nii.gz'
-wf_main.inputs.inputspec.brain_mask_eroded = \
-'/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
-
-wf_main.inputs.inputspec.threshold = 0.5
-
-wf_main.inputs.inputspec.csf_tissue_prior_path =\
-'/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_csf.nii.gz'
-wf_main.inputs.inputspec.wm_tissue_prior_path =\
-'/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_white.nii.gz'
+    wf_main.inputs.inputspec.std2func_mat_path = \
+    '/mnt/project1/home1/varunk/fMRI/results/resultsABIDE1/preprocess/'+\
+    'motion_correction_bet/coreg_reg/atlas_resize_reg_directory/_subject_id_0050002/'+\
+    'std2func_xform/fullbrain_atlas_thr0-2mm_resample_flirt.mat'
 
 
-wf_main.base_dir = 'results/'
-TEMP_DIR_FOR_STORAGE = 'crash_files/'
-wf_main.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
+    # wf_tissue_masks.inputs.inputspec.tissue_prior_csf_path = '/mnt/project1/home1/varunk/fMRI/testScripts/results/wf_tissue_priors/threshold_csf/avg152T1_csf_resample_thresh.nii.gz'
+    # wf_tissue_masks.inputs.inputspec.tissue_prior_wm_path = '/mnt/project1/home1/varunk/fMRI/testScripts/results/wf_tissue_priors/threshold_wm/avg152T1_white_resample_thresh.nii.gz'
+    wf_main.inputs.inputspec.brain_mask_eroded = \
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
 
-wf_main.write_graph(graph2use='flat', format='png', simple_form=True)
+    wf_main.inputs.inputspec.threshold = 0.5
 
-out = wf_main.run()
+    wf_main.inputs.inputspec.csf_tissue_prior_path =\
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_csf.nii.gz'
+    wf_main.inputs.inputspec.wm_tissue_prior_path =\
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_white.nii.gz'
+
+
+    wf_main.base_dir = 'results/'
+    TEMP_DIR_FOR_STORAGE = 'crash_files/'
+    wf_main.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
+
+    wf_main.write_graph(graph2use='flat', format='png', simple_form=True)
+
+    out = wf_main.run()
