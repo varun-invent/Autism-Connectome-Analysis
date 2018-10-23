@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # ### Preprocessing Pipeline
@@ -26,6 +25,7 @@ from os.path import join as opj
 from nipype.interfaces import afni
 import nibabel as nib
 import json
+from confounds import wf_main_for_masks as wfm
 
 
 # import logging
@@ -498,64 +498,6 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                              despike=False, no_detrend=True, notrans=True,
                              outputtype='NIFTI_GZ'),name='bandpass')
 
-    # ### Following is a Join Node that collects the preprocessed file paths and saves them in a file
-
-
-
-    def get_masks(resampled_anat_file_path, func2anat_mat_path, reference_func_file_path ):
-        '''
-        Returns CSF, WM and GM masks' paths
-        '''
-        fastr = FAST(segments=True,use_priors=True)
-        fastr.inputs.in_files = resampled_anat_file_path
-        fastr.inputs.out_basename = 'fast_'
-        print(fastr.cmdline)
-        out = fastr.run()
-
-        csf_path = out.outputs.tissue_class_files[0]
-        gm_path = out.outputs.tissue_class_files[1]
-        wm_path = out.outputs.tissue_class_files[2]
-
-
-        # Input the func2std tranformation matrix and invert it
-
-        # func2anat_mat_path = \
-        # '_subject_id_0050002/func2anat_reg/sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt.mat'
-
-        inv_mat = ConvertXFM(invert_xfm=True)
-
-        inv_mat.inputs.in_file  = func2anat_mat_path
-
-        res = inv_mat.run()
-
-        anat2func_mat_path = res.outputs.out_file
-
-        # Transform the above created masks to the functional space using the inverse matrix
-
-        std2func_xform = FLIRT(output_type='NIFTI',
-                                 apply_xfm=True, interp='nearestneighbour')
-
-
-        std2func_xform.inputs.reference = reference_func_file_path
-        std2func_xform.inputs.in_matrix_file = anat2func_mat_path
-
-        files = [csf_path, gm_path, wm_path]
-        out_files = []
-        for in_file in files:
-            std2func_xform.inputs.in_file = in_file
-            print(std2func_xform.cmdline)
-            flirt_out = std2func_xform.run()
-            out_files.apppend(flirt_out.outputs.out_file)
-
-        csf_mask_path = out_files[0]
-        gm_mask_path = out_files[1]
-        wm_mask_path = out_files[2]
-
-        return csf_mask_path, gm_mask_path, wm_mask_path
-
-    fast = Node(Function(function=get_masks, input_names=['resampled_anat_file_path','func2anat_mat_path','reference_func_file_path'],
-                                    output_names=['csf_mask_path','gm_mask_path','wm_mask_path']), name='fast')
-
 
 
     def save_file_list_function_in_brain(in_brain):
@@ -650,6 +592,29 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
           out_atlas = opj(os.getcwd(),file_name7) # path
           return out_atlas
 
+    def save_file_list_function_in_confound_masks(in_csf_mask, in_wm_mask):
+        import numpy as np
+        import os
+        from os.path import join as opj
+
+
+        file_list8 = np.asarray(in_csf_mask)
+        print('######################## File List ######################: \n',file_list8)
+        np.save('csf_mask_file_list',file_list8)
+        file_name8 = 'csf_mask_file_list.npy'
+        out_csf_mask = opj(os.getcwd(),file_name8) # path
+
+
+
+        file_list9 = np.asarray(in_wm_mask)
+        print('######################## File List ######################: \n',file_list9)
+        np.save('wm_mask_file_list',file_list9)
+        file_name9 = 'wm_mask_file_list.npy'
+        out_wm_mask = opj(os.getcwd(),file_name9) # path
+
+
+        return out_csf_mask, out_wm_mask
+
 
     save_file_list_in_brain = JoinNode(Function(function=save_file_list_function_in_brain, input_names=['in_brain'],
                    output_names=['out_brain']),
@@ -700,6 +665,15 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                name="save_file_list_in_atlas")
 
 
+    save_file_list_in_confound_masks = JoinNode(Function(function=save_file_list_function_in_confound_masks, input_names=['in_csf_mask', 'in_wm_mask'],
+               output_names=['out_csf_mask', 'out_wm_mask']),
+               joinsource="infosource",
+               joinfield=['in_csf_mask', 'in_wm_mask'],
+               name="save_file_list_in_confound_masks")
+
+
+
+
 
 
     # ### Motion outliers
@@ -707,6 +681,30 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     motionOutliers = Node(MotionOutliers(no_motion_correction=False,metric='fd', out_metric_plot = 'fd_plot.png',
                                          out_metric_values='fd_raw.txt'),name='motionOutliers')
+
+
+# -------------------------FAST -----------------------------------------------------------------------------------------------------
+    wf_confound_masks = wfm.get_wf_main(name='wf_main_masks')
+    wf_confound_masks.inputs.inputspec.brain_mask_eroded = \
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
+
+    wf_confound_masks.inputs.inputspec.threshold = 0.5
+
+    wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_csf.nii.gz'
+    wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_white.nii.gz'
+
+
+
+    wf_confound_masks_and_qc = Workflow(name='wf_confound_masks_and_qc')
+
+    wf_confound_masks_and_qc.connect(wf_confound_masks, 'outputspec.csf_tissue_prior_path',
+                                            save_file_list_in_confound_masks, 'in_csf_mask' )
+    wf_confound_masks_and_qc.connect(wf_confound_masks, 'outputspec.wm_tissue_prior_path',
+                                            save_file_list_in_confound_masks, 'in_wm_mask' )
+
+    # TODO: Create a join node to take as input the dict rows from wf_confound_masks and create a CSV file                                                
 
     # ## Workflow for atlas registration  from std to functional
 
@@ -726,6 +724,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     wf_atlas_resize_reg.connect([(std2func_xform, save_file_list_in_atlas, [('out_file','in_atlas')])])
 
+    wf_atlas_resize_reg.connect([(std2func_xform, wf_confound_masks, [('out_file','inputspec.std2func_mat_path')])])
     # ---------------------------Save the required files --------------------------------------------
 
 
@@ -810,6 +809,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         # Now inverse the func2std MAT to std2func
         wf_coreg_reg.connect(concat_xform, 'out_file', wf_atlas_resize_reg,'inv_mat.in_file')
 
+        #  For the extraction of the confound masks
+        wf_coreg_reg.connect(resample_anat, 'out_file', wf_confound_masks, 'inputspec.resampled_anat_file_path')
+        wf_coreg_reg.connect(func2anat_reg, 'out_matrix_file', wf_confound_masks, 'inputspec.func2anat_mat_path')
 
         '''
         To get WM, CSF and GM masks
@@ -818,10 +820,34 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         --------
 
         Use wf_coreg_reg.resample_anat.out_file to get the resampled anatomical file. [ DONE ]
-        Apply FAST on the resampled anatomical file to get the masks. [ TODO FAST ]
-        Use wf_coreg_reg.func2anat_reg.out_matrix_file and create a node to invert it. [TODO invert]
+        Apply FAST on the resampled anatomical file to get the masks. [ DONE]
+        Use wf_coreg_reg.func2anat_reg.out_matrix_file and create a node to invert it. [DONE]
         Transform the masks to the functional space using the above inverted transformation matrix. [TODO xform]
         '''
+
+        #
+        # wf_coreg_reg.connect(fast, 'csf_mask_path', save_file_list_in_confound_masks, 'in_csf_mask')
+        # wf_coreg_reg.connect(fast, 'gm_mask_path', save_file_list_in_confound_masks, 'in_gm_mask')
+        # wf_coreg_reg.connect(fast, 'wm_mask_path', save_file_list_in_confound_masks, 'in_wm_mask')
+        #
+        # wf_coreg_reg.connect(
+        # save_file_list_in_confound_masks, 'out_csf_mask', dataSink, 'csf_masks.@out_csf_mask')
+        # wf_coreg_reg.connect(
+        # save_file_list_in_confound_masks, 'out_gm_mask', dataSink, 'gm_masks.@out_gm_mask')
+        # wf_coreg_reg.connect(
+        # save_file_list_in_confound_masks, 'out_wm_mask', dataSink, 'wm_masks.@out_wm_mask')
+
+        # # ------------------------------------------------------------------------------------------------------------------------------
+        # wf_coreg_reg.connect(resample_anat, 'out_file', wf_main_masks, 'inputspec.resampled_anat_file_path')
+        # wf_coreg_reg.connect(func2anat_reg, 'out_matrix_file', wf_main_masks, 'inputspec.func2anat_mat_path')
+        #
+        # inputspec.reference_func_file_path
+        # inputspec.std2func_mat_path
+        # inputspec.brain_mask_eroded
+        # inputspec.threshold
+        # inputspec.csf_tissue_prior_path
+        # inputspec.wm_tissue_prior_path
+
 
 # ------------------------------------------------------------------------------------------------------------------------------
 
@@ -888,7 +914,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
 
 
-                (maskfunc4mean, wf_coreg_reg, [('out_file','func2anat_reg.in_file')])
+                (maskfunc4mean, wf_coreg_reg, [('out_file','func2anat_reg.in_file')]),
+
+                (meanfunc, wf_coreg_reg, [('out_file','fast.reference_func_file_path')]),
 
                 # -----------------------------------------------------------
                 #   Connect maskfunc4mean node to FSL:FAST
@@ -898,6 +926,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                 #   Then save the masks and then save the file lists as well.
                 # -----------------------------------------------------------
 
+                (applyMask, wf_confound_masks [('out_file', 'inputspec.reference_func_file_path')])
 
 
     ])
@@ -1061,4 +1090,4 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     wf.write_graph(graph2use='flat', format='png', simple_form=True)
 
     # Run it in parallel
-    # wf.run('MultiProc', plugin_args={'n_procs': num_proc})
+    wf.run('MultiProc', plugin_args={'n_procs': num_proc})
