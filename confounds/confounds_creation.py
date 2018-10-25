@@ -1,7 +1,7 @@
 from nipype import Node
 from nipype.interfaces.utility import Function
 
-def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_path):
+def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_path, global_signal_flag= None):
     import nibabel as nb
     import numpy as np
     import os
@@ -9,6 +9,9 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
     nii = nb.load(in_file)
     data = nii.get_data().astype(np.float32)
     global_mask = (data != 0).sum(-1) != 0
+
+    # Calculate regressors
+    regressor_map = {'constant' : np.ones((data.shape[3],1))}
 
 
     # Check and define regressors which are provided from files
@@ -21,6 +24,7 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
         if motion.size == 0:
             raise ValueError('Motion signal file {0} is '
                              'empty'.format(motion_file))
+        regressor_map['motion'] = motion
 
     #  CSF
     if csf_mask_path is not None:
@@ -37,20 +41,23 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
                              'timepoints {1}'.format(mean_csf.shape[0],
                                                      data.shape[3]))
 
+        regressor_map['csf'] = mean_csf
+
     #  GM
-    if gm_mask_path is not None:
-        gm_mask = nb.load(gm_mask_path).get_data().astype(np.float32)
-        idx = np.where(gm_mask != 0)
-        gm_signals = data[idx[0],idx[1],idx[2],:]
-        # This should give me a matrix of size (T x gm_Voxels)
-        # Now take a mean of the above created matrix to get  a column vector i.e axis = 1
+    # if gm_mask_path is not None:
+    #     gm_mask = nb.load(gm_mask_path).get_data().astype(np.float32)
+    #     idx = np.where(gm_mask != 0)
+    #     gm_signals = data[idx[0],idx[1],idx[2],:]
+    #     # This should give me a matrix of size (T x gm_Voxels)
+    #     # Now take a mean of the above created matrix to get  a column vector i.e axis = 1
+    #
+    #     mean_gm = np.mean(gm_signals.T, axis=1)
+    #
+    #     if mean_gm.shape[0] != data.shape[3]:
+    #         raise ValueError('GM parameters {0} do not match data '
+    #                          'timepoints {1}'.format(mean_gm.shape[0],
+    #                                                  data.shape[3]))
 
-        mean_gm = np.mean(gm_signals.T, axis=1)
-
-        if mean_gm.shape[0] != data.shape[3]:
-            raise ValueError('GM parameters {0} do not match data '
-                             'timepoints {1}'.format(mean_gm.shape[0],
-                                                     data.shape[3]))
 
 
     #  WM
@@ -68,16 +75,22 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
                              'timepoints {1}'.format(mean_wm.shape[0],
                                                      data.shape[3]))
 
+        regressor_map['wm'] = mean_wm
+
+    if global_signal_flag is not None:
+        idx = np.where(global_mask != 0)
+        global_signal = data[idx[0],idx[1],idx[2],:]
+        # This should give me a matrix of size (T x wm_Voxels)
+        # Now take a mean of the above created matrix to get  a column vector i.e axis = 1
+
+        mean_global = np.mean(global_signal.T, axis=1)
+        regressor_map['global'] = mean_global
+
+        print('Global_signal Shape: ',global_signal.shape)
 
 
 
-    # Calculate regressors
-    regressor_map = {'constant' : np.ones((data.shape[3],1))}
 
-    regressor_map['motion'] = motion
-    regressor_map['csf'] = mean_csf
-    regressor_map['gm'] = mean_gm
-    regressor_map['wm'] = mean_wm
 
 
     X = np.zeros((data.shape[3], 1))
@@ -124,19 +137,15 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
 
     return out_file
 
-
-# In[512]:
-
-
-# Create a Node for above
-calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file', 'motion_file', 'csf_mask_path', 'gm_mask_path', 'wm_mask_path'],
-                                output_names=['out_file']), name='calc_residuals')
+if __name__ == "__main__":
+    calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file', 'motion_file', 'csf_mask_path', 'gm_mask_path', 'wm_mask_path','global_signal_flag'],
+                                    output_names=['out_file']), name='calc_residuals')
 
 
-calc_residuals.inputs.in_file = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/_subject_id_0050009/applyMask/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii_brain.nii.gz'
-calc_residuals.inputs.motion_file = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/_subject_id_0050009/mcflirt/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii.par'
-calc_residuals.inputs.csf_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_0_flirt.nii'
-calc_residuals.inputs.gm_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_1_flirt.nii'
-calc_residuals.inputs.wm_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_2_flirt.nii'
-
-calc_residuals.run()
+    calc_residuals.inputs.in_file = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/_subject_id_0050009/applyMask/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii_brain.nii.gz'
+    calc_residuals.inputs.motion_file = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/_subject_id_0050009/mcflirt/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii.par'
+    calc_residuals.inputs.csf_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_0_flirt.nii'
+    calc_residuals.inputs.gm_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_1_flirt.nii'
+    calc_residuals.inputs.wm_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_2_flirt.nii'
+    calc_residuals.inputs.global_signal_flag = True
+    calc_residuals.run()
