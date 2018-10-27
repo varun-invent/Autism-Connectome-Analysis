@@ -154,7 +154,7 @@ if __name__ == "__main__":
     # wf_tissue_masks.inputs.inputspec.tissue_prior_wm_path = '/mnt/project1/home1/varunk/fMRI/testScripts/results/wf_tissue_priors/threshold_wm/avg152T1_white_resample_thresh.nii.gz'
     wf_tissue_masks.inputs.inputspec.brain_mask_eroded = '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
 
-    wf_tissue_masks.inputs.inputspec.threshold = 0.5
+    wf_tissue_masks.inputs.inputspec.threshold = 0.2
     wf_tissue_masks.base_dir = 'results/'
     TEMP_DIR_FOR_STORAGE = 'crash_files/'
     wf_tissue_masks.config = {"execution": {"crashdump_dir": TEMP_DIR_FOR_STORAGE}}
