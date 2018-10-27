@@ -22,8 +22,8 @@ import numpy as np
 
 # results_path = '/mnt/project1/home1/varunk/results/'
 
-SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
-number_of_selected_subjects = 80
+SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
+number_of_selected_subjects = 3
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
 
@@ -76,6 +76,13 @@ phenotype_file_path = task_info['phenotype_file_path']
 # categoryInfo = '/home1/varunk/data/NYU_Cocaine-BIDS/grouping.csv'
 categoryInfo = None
 
+# Tissue - CSF, WM and GM masks path
+csf_path = opj(base_directory,datasink_name,'csf_masks/csf_mask_file_list.npy')
+gm_path = opj(base_directory,datasink_name,'gm_masks/gm_mask_file_list.npy')
+wm_path = opj(base_directory,datasink_name,'wm_masks/wm_mask_file_list.npy')
+
+
+
 # --------------- Creating Log --------------------
 
 # Get time
@@ -121,7 +128,46 @@ bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', 
 '28780','28781','28782','28783','29622'
 ]
 
-bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276', '50774','51276','0050313', '0051195']
+# bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247',
+# '51270','51310','51276','50045', '50746', '50727', '50774',
+# '0050313', '0051195']
+
+bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247',
+'51270','51310', '50727']
+
+
+'''
+UCLA_1
+'51232','51233' 51242','51243','51244',
+'51245','51246', '51247', '51270', '51310': Anat not present, Update: Highres downloaded
+
+Note: Highres looks like a T2 image. Not sure why the pixdim4 is equal to 5 in one of the subjects of UCLA_2
+
+'51276' Functional file corrupt, Update: Downloaded new and copied
+
+PITT
+'50045' Looks fine to me use it again
+
+Leuven_2
+'50045', '50746' looks fine to me
+
+'50727': Incomplete Brain Coverage
+
+KKI
+'50774': Functional brain file was corrupted while transfer. Downloaded a new one.
+
+UM1:
+'0050313': Movement issue
+
+Stanford:
+'0051195': Movements
+
+So, The final bug in ABIDE I is 50727 of Leuven_2 due to partial brain coverage
+Others - '51232','51233' 51242','51243','51244',
+'51245','51246','51247','51270','51310' doesnot have anatomical file so were
+discarded. So total of 11 subjects are discarded.
+'''
+
 
 bugs = bugs_abide1
 # bugs = []
@@ -190,12 +236,15 @@ phenotype_file_path,
 data_directory,
 hypothesis_test_dir,
 fdr_results_dir,
-score_corr_dir
+score_corr_dir,
+csf_path,
+gm_path,
+wm_path
 ]
 
-PREPROC = 0
+PREPROC = 1
 POSTPROC = 0
-HYPOTEST = 1
+HYPOTEST = 0
 FDRES = 0
 SCORE_CORR = 0
 
@@ -222,8 +271,8 @@ log.flush()
 
 ANAT = 1
 
+# itr_preproc = [1,1,0,1]
 itr_preproc = [1,1,0,1]
-# itr_preproc = [0,0,0,0]
 extract, slicetimer,motionOutliers, mcflirt= list(map(str, itr_preproc))
 options_binary_string = extract+slicetimer+motionOutliers+mcflirt
 
