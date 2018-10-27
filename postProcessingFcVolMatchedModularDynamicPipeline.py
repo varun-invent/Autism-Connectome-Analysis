@@ -25,6 +25,7 @@ import nibabel as nib
 import json
 import numpy as np
 import pandas as pd
+from confounds import confounds_creation.calc_residuals as func_calc_residuals
 
 
 
@@ -153,9 +154,11 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy
 
 def volumeCorrect(subject_list, phenotype_file_path = None, demographics_file_path = None, vols = None):
     if demographics_file_path == None:
-        demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
+        raise Exception('Demographics file not supplied')
+        # demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
     if phenotype_file_path == None:
-        phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+        raise Exception('Phenotype file not supplied')
+        # phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 
     df_phenotype = pd.read_csv(phenotype_file_path)
 
@@ -451,99 +454,102 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # In[511]:
 
 
-    def calc_residuals(in_file,
-                       motion_file):
-        """
-        Calculates residuals of nuisance regressors -motion parameters for every voxel for a subject using GLM.
+    # def calc_residuals(in_file,
+    #                    motion_file):
+    #     """
+    #     Calculates residuals of nuisance regressors -motion parameters for every voxel for a subject using GLM.
+    #
+    #     Parameters
+    #     ----------
+    #     in_file : string
+    #         Path of a subject's motion corrected nifti file.
+    #     motion_par_file : string
+    #         path of a subject's motion parameters
+    #
+    #
+    #     Returns
+    #     -------
+    #     out_file : string
+    #         Path of residual file in nifti format
+    #
+    #     """
+    #     import nibabel as nb
+    #     import numpy as np
+    #     import os
+    #     from os.path import join as opj
+    #     nii = nb.load(in_file)
+    #     data = nii.get_data().astype(np.float32)
+    #     global_mask = (data != 0).sum(-1) != 0
+    #
+    #
+    #     # Check and define regressors which are provided from files
+    #     if motion_file is not None:
+    #         motion = np.genfromtxt(motion_file)
+    #         if motion.shape[0] != data.shape[3]:
+    #             raise ValueError('Motion parameters {0} do not match data '
+    #                              'timepoints {1}'.format(motion.shape[0],
+    #                                                      data.shape[3]))
+    #         if motion.size == 0:
+    #             raise ValueError('Motion signal file {0} is '
+    #                              'empty'.format(motion_file))
+    #
+    #     # Calculate regressors
+    #     regressor_map = {'constant' : np.ones((data.shape[3],1))}
+    #
+    #     regressor_map['motion'] = motion
+    #
+    #
+    #     X = np.zeros((data.shape[3], 1))
+    #
+    #     for rname, rval in regressor_map.items():
+    #         X = np.hstack((X, rval.reshape(rval.shape[0],-1)))
+    #
+    #     X = X[:,1:]
+    #
+    #     if np.isnan(X).any() or np.isnan(X).any():
+    #         raise ValueError('Regressor file contains NaN')
+    #
+    #     Y = data[global_mask].T
+    #
+    #     try:
+    #         B = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
+    #     except np.linalg.LinAlgError as e:
+    #         if "Singular matrix" in e:
+    #             raise Exception("Error details: {0}\n\nSingular matrix error: "
+    #                             "The nuisance regression configuration you "
+    #                             "selected may have been too stringent, and the "
+    #                             "regression could not be completed. Ensure your "
+    #                             "parameters are not too "
+    #                             "extreme.\n\n".format(e))
+    #         else:
+    #             raise Exception("Error details: {0}\n\nSomething went wrong with "
+    #                             "nuisance regression.\n\n".format(e))
+    #
+    #     Y_res = Y - X.dot(B)
+    #
+    #     data[global_mask] = Y_res.T
+    #
+    #     img = nb.Nifti1Image(data, header=nii.get_header(),
+    #                          affine=nii.get_affine())
+    #
+    #     subject_name = in_file.split('/')[-1].split('.')[0]
+    #     filename = subject_name + '_residual.nii.gz'
+    #     out_file = os.path.join(os.getcwd(),filename )
+    #     img.to_filename(out_file) # alt to nib.save
+    #
+    #     return out_file
+    #
+    #
+    # # In[512]:
+    #
+    #
+    # # Create a Node for above
+    # calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file','motion_file'],
+    #                                 output_names=['out_file']), name='calc_residuals')
 
-        Parameters
-        ----------
-        in_file : string
-            Path of a subject's motion corrected nifti file.
-        motion_par_file : string
-            path of a subject's motion parameters
-
-
-        Returns
-        -------
-        out_file : string
-            Path of residual file in nifti format
-
-        """
-        import nibabel as nb
-        import numpy as np
-        import os
-        from os.path import join as opj
-        nii = nb.load(in_file)
-        data = nii.get_data().astype(np.float32)
-        global_mask = (data != 0).sum(-1) != 0
-
-
-        # Check and define regressors which are provided from files
-        if motion_file is not None:
-            motion = np.genfromtxt(motion_file)
-            if motion.shape[0] != data.shape[3]:
-                raise ValueError('Motion parameters {0} do not match data '
-                                 'timepoints {1}'.format(motion.shape[0],
-                                                         data.shape[3]))
-            if motion.size == 0:
-                raise ValueError('Motion signal file {0} is '
-                                 'empty'.format(motion_file))
-
-        # Calculate regressors
-        regressor_map = {'constant' : np.ones((data.shape[3],1))}
-
-        regressor_map['motion'] = motion
-
-
-        X = np.zeros((data.shape[3], 1))
-
-        for rname, rval in regressor_map.items():
-            X = np.hstack((X, rval.reshape(rval.shape[0],-1)))
-
-        X = X[:,1:]
-
-        if np.isnan(X).any() or np.isnan(X).any():
-            raise ValueError('Regressor file contains NaN')
-
-        Y = data[global_mask].T
-
-        try:
-            B = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
-        except np.linalg.LinAlgError as e:
-            if "Singular matrix" in e:
-                raise Exception("Error details: {0}\n\nSingular matrix error: "
-                                "The nuisance regression configuration you "
-                                "selected may have been too stringent, and the "
-                                "regression could not be completed. Ensure your "
-                                "parameters are not too "
-                                "extreme.\n\n".format(e))
-            else:
-                raise Exception("Error details: {0}\n\nSomething went wrong with "
-                                "nuisance regression.\n\n".format(e))
-
-        Y_res = Y - X.dot(B)
-
-        data[global_mask] = Y_res.T
-
-        img = nb.Nifti1Image(data, header=nii.get_header(),
-                             affine=nii.get_affine())
-
-        subject_name = in_file.split('/')[-1].split('.')[0]
-        filename = subject_name + '_residual.nii.gz'
-        out_file = os.path.join(os.getcwd(),filename )
-        img.to_filename(out_file) # alt to nib.save
-
-        return out_file
-
-
-    # In[512]:
-
-
-    # Create a Node for above
-    calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file','motion_file'],
-                                    output_names=['out_file']), name='calc_residuals')
-
+    calc_residuals = Node(Function(function=func_calc_residuals, input_names=['in_file', 'motion_file',
+     'csf_mask_path', 'wm_mask_path','global_signal_flag','const','check_orthogonality'],
+                                    output_names=['out_file_list']), name='calc_residuals')
 
     # ## Datasink
     # I needed to define the structure of what files are saved and where.
@@ -927,7 +933,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         # volcorrect
 
         if old_node == calc_residuals:
-            old_node_output = 'out_file'
+            old_node_output = 'out_file_list'
         elif old_node == extract :
             old_node_output = 'roi_file'
         elif old_node == globalSignalRemoval:
