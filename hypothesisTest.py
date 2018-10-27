@@ -138,10 +138,12 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
 
         if demographics_file_path == None:
-            demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
+            raise Exception('Demographics file not supplied')
+            # demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
 
         if phenotype_file_path == None:
-            phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+            raise Exception('Phenotype file not supplied')
+            # phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 
 
         df_demographics = pd.read_csv(demographics_file_path)
@@ -248,6 +250,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
             # # TR matching
             print('TR Matching with range (0,2.5]')
 
+            # TODO Ask user which site needs to be dropped if any
             df_demographics = df_demographics.drop(df_demographics.index[[7]]) # Deleting OHSU with volumes 82
 
             TR_bins = np.array([[0,2.5]])
