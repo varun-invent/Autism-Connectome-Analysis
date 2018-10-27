@@ -1,5 +1,5 @@
-import wf_tissue_priors as tp
-import wf_get_masks as gm
+from confounds import wf_tissue_priors as tp
+from confounds import wf_get_masks as gm
 from nipype.interfaces.fsl import (FLIRT, FAST, ConvertXFM, ImageMaths, MultiImageMaths)
 import nibabel as nib
 import numpy as np
@@ -22,8 +22,8 @@ def get_wf_main(name='wf_main'):
     outputspec = Node(IdentityInterface(fields=['csf_tissue_prior_path',  'wm_tissue_prior_path', 'qc_stats_dict']),
                       name="outputspec")
 
-    tissue_priors = tp.get_wf_tissue_priors(name='wf_tissue_priors4')
-    tissue_masks = gm.get_wf_tissue_masks(name='wf_tissue_masks4')
+    tissue_priors = tp.get_wf_tissue_priors(name='wf_tissue_priors')
+    tissue_masks = gm.get_wf_tissue_masks(name='wf_tissue_masks')
 
 
     def compute_qc_stats(anat_file_path, csf_mask, csf_prior, wm_mask, wm_prior):
@@ -81,21 +81,21 @@ def get_wf_main(name='wf_main'):
         sub_id = anat_file_path.split('/')[-1].split('_')[0].split('-')[1]
         print('Sub ID ',sub_id)
         dict = od()
-        dict['voxels_count_csf_prior'] = voxels_count_csf_prior
-        dict['voxels_count_wm_prior'] = voxels_count_wm_prior
-        dict['voxels_count_csf_mask'] = voxels_count_csf_mask
-        dict['voxels_count_wm_mask'] = voxels_count_wm_mask
-        dict['A_minus_B_csf'] = A_minus_B_csf
-        dict['A_minus_B_wm'] = A_minus_B_wm
-        dict['B_minus_A_csf'] = B_minus_A_csf
-        dict['B_minus_A_wm'] = B_minus_A_wm
-        dict['A_union_B_csf'] = A_union_B_csf
-        dict['A_union_B_wm'] = A_union_B_wm
-        dict['A_intersection_B_csf'] =  A_intersection_B_csf
-        dict['A_intersection_B_wm'] = A_intersection_B_wm
-        dict['quality_csf'] = quality_csf
-        dict['quality_wm'] = quality_wm
-        dict['sub_id'] = sub_id
+        dict['sub_id'] = [sub_id]
+        dict['voxels_count_csf_prior'] = [voxels_count_csf_prior]
+        dict['voxels_count_wm_prior'] = [voxels_count_wm_prior]
+        dict['voxels_count_csf_mask'] = [voxels_count_csf_mask]
+        dict['voxels_count_wm_mask'] = [voxels_count_wm_mask]
+        dict['A_minus_B_csf'] = [A_minus_B_csf]
+        dict['A_minus_B_wm'] = [A_minus_B_wm]
+        dict['B_minus_A_csf'] = [B_minus_A_csf]
+        dict['B_minus_A_wm'] = [B_minus_A_wm]
+        dict['A_union_B_csf'] = [A_union_B_csf]
+        dict['A_union_B_wm'] = [A_union_B_wm]
+        dict['A_intersection_B_csf'] =  [A_intersection_B_csf]
+        dict['A_intersection_B_wm'] = [A_intersection_B_wm]
+        dict['quality_csf'] = [quality_csf]
+        dict['quality_wm'] = [quality_wm]
 
         return dict
 
