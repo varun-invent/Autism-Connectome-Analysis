@@ -1,7 +1,7 @@
 from nipype import Node
 from nipype.interfaces.utility import Function
 
-def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_path, global_signal_flag= None):
+def calc_residuals(in_file, motion_file=None, csf_mask_path=None, wm_mask_path=None, global_signal_flag= None, const=None, check_orthogonality= None):
     import nibabel as nb
     import numpy as np
     import os
@@ -11,8 +11,11 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
     global_mask = (data != 0).sum(-1) != 0
 
     # Calculate regressors
-    regressor_map = {'constant' : np.ones((data.shape[3],1))}
+    regressor_map = {}
+    if const is not None:
+        regressor_map = {'constant' : np.ones((data.shape[3],1))}
 
+    out_file_list = []
 
     # Check and define regressors which are provided from files
     if motion_file is not None:
@@ -42,6 +45,11 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
                                                      data.shape[3]))
 
         regressor_map['csf'] = mean_csf
+
+        filename = 'mean_csf.txt'
+        np.savetxt(filename,mean_csf,fmt='%.3e')
+        out_file_mean_csf = os.path.join(os.getcwd(),filename)
+        out_file_list.append(out_file_mean_csf)
 
     #  GM
     # if gm_mask_path is not None:
@@ -76,6 +84,10 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
                                                      data.shape[3]))
 
         regressor_map['wm'] = mean_wm
+        filename = 'mean_wm.txt'
+        np.savetxt(filename,mean_wm,fmt='%.3e')
+        out_file_mean_wm = os.path.join(os.getcwd(),filename)
+        out_file_list.append(out_file_mean_wm)
 
     if global_signal_flag is not None:
         idx = np.where(global_mask != 0)
@@ -85,8 +97,12 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
 
         mean_global = np.mean(global_signal.T, axis=1)
         regressor_map['global'] = mean_global
+        filename = 'mean_global.txt'
+        np.savetxt(filename,mean_global,fmt='%.3e')
+        out_file_mean_global = os.path.join(os.getcwd(),filename)
+        out_file_list.append(out_file_mean_global)
 
-        print('Global_signal Shape: ',global_signal.shape)
+        # print('Global_signal Shape: ',global_signal.shape)
 
 
 
@@ -98,7 +114,14 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
     for rname, rval in regressor_map.items():
         X = np.hstack((X, rval.reshape(rval.shape[0],-1)))
 
+
+
     X = X[:,1:]
+    if len(regressor_map) == 1: # Only then you can test the correctness
+        confound = X
+    else:
+        confound = X
+
 
     if np.isnan(X).any() or np.isnan(X).any():
         raise ValueError('Regressor file contains NaN')
@@ -124,6 +147,25 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
     print('Shape of X is: ', X.shape)
     print('Shape of B is: ', B.shape)
 
+    # -----------------------------------
+    # Check the orthogonality of the residual with the confound
+    if check_orthogonality:
+        # Randomly sample 100 voxel time series by randomly selecting a list x from [0, brain.shape[0] - 1] and similarly y and z
+        sample_size = 20
+        voxel_list = np.random.choice(np.arange(Y_res.shape[0]),sample_size,replace=False)
+
+        # For these 100 voxels, calculate the dot product of the series and mean signal one by one
+        # print('Y_res shape', Y_res.shape)
+        print('Size of confound ',confound.shape)
+        sum = 0
+        for voxel_idx in voxel_list:
+            dot_prod = np.dot(Y_res[:,voxel_idx],confound)
+            sum = sum + dot_prod
+            print('Dot_prod: ',dot_prod)
+
+        print('Sum of Dot_prod ',sum)
+
+    # -----------------------------------
     data[global_mask] = Y_res.T
 
     img = nb.Nifti1Image(data, header=nii.get_header(),
@@ -132,20 +174,35 @@ def calc_residuals(in_file, motion_file, csf_mask_path, gm_mask_path, wm_mask_pa
     subject_name = in_file
     # .split('/')[-1].split('.')[0]
     filename = subject_name + '_residual.nii.gz'
-    out_file = os.path.join(os.getcwd(),filename )
-    img.to_filename(out_file) # alt to nib.save
+    out_file_residual = os.path.join(os.getcwd(),filename )
+    img.to_filename(out_file_residual) # alt to nib.save
 
-    return out_file
+    out_file_list.append(out_file_residual)
+
+
+
+    return out_file_list
 
 if __name__ == "__main__":
-    calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file', 'motion_file', 'csf_mask_path', 'gm_mask_path', 'wm_mask_path','global_signal_flag'],
-                                    output_names=['out_file']), name='calc_residuals')
+    calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file', 'motion_file', 'csf_mask_path', 'wm_mask_path','global_signal_flag','const','check_orthogonality'],
+                                    output_names=['out_file_list']), name='calc_residuals')
 
 
-    calc_residuals.inputs.in_file = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/_subject_id_0050009/applyMask/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii_brain.nii.gz'
-    calc_residuals.inputs.motion_file = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/_subject_id_0050009/mcflirt/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii.par'
-    calc_residuals.inputs.csf_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_0_flirt.nii'
-    calc_residuals.inputs.gm_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_1_flirt.nii'
-    calc_residuals.inputs.wm_mask_path = '/mnt/project1/home1/varunk/fMRI/results/temp_resultsABIDE1/preprocess/motion_correction_bet/coreg_reg/_subject_id_0050009/fast/fast__seg_2_flirt.nii'
+    calc_residuals.inputs.in_file = '/mnt/project1/home1/varunk/fMRI/results/resultsABIDE1_1/preprocess/motion_correction_bet/_subject_id_0050009/applyMask/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii_brain.nii.gz'
+    calc_residuals.inputs.motion_file = '/mnt/project1/home1/varunk/fMRI/results/resultsABIDE1_1/preprocess/_subject_id_0050009/mcflirt/sub-0050009_task-rest_run-1_bold_roi_st_mcf.nii.par'
+
+    calc_residuals.inputs.csf_mask_path = '/mnt/project1/home1/varunk/fMRI/'+\
+    'results/resultsABIDE1_1/preprocess/motion_correction_bet/coreg_reg/'+\
+    'atlas_resize_reg_directory/wf_main_masks/wf_tissue_masks/'+\
+    '_subject_id_0050009/csf_mask/fast__pve_0_flirt_thresh_masked.nii.gz'
+
+    calc_residuals.inputs.wm_mask_path = '/mnt/project1/home1/varunk/fMRI/'+\
+    'results/resultsABIDE1_1/preprocess/motion_correction_bet/coreg_reg/'+\
+    'atlas_resize_reg_directory/wf_main_masks/wf_tissue_masks/'+\
+    '_subject_id_0050009/threshold_wm/fast__pve_2_flirt_thresh.nii.gz'
+
     calc_residuals.inputs.global_signal_flag = True
+    calc_residuals.inputs.const = True
+    calc_residuals.inputs.check_orthogonality = True
+
     calc_residuals.run()
