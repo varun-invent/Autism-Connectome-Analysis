@@ -44,30 +44,30 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 
 
 
-def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, \
+def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0, band_pass_filtering=0, \
     smoothing=0, num_proc = 7):
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
-    functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
-    fc_datasink_name=paths[9]
-    atlasPath=paths[10]
-    brain_path=paths[11]
-    mask_path=paths[12]
-    atlas_path=paths[13]
-    tr_path=paths[14]
-    motion_params_path=paths[15]
-    func2std_mat_path=paths[16]
-    MNI3mm_path=paths[17]
-    demographics_file_path = paths[18]
-    phenotype_file_path = paths[19]
-    data_directory = paths[20]
-    hypothesis_test_dir = paths[21]
+    # json_path=paths[0]
+    base_directory = paths['base_directory']
+    motion_correction_bet_directory = paths['motion_correction_bet_directory']
+    parent_wf_directory = paths['parent_wf_directory']
+    # functional_connectivity_directory=paths[4]
+    coreg_reg_directory= paths['coreg_reg_directory']
+    atlas_resize_reg_directory= paths['atlas_resize_reg_directory']
+    # subject_list = paths[7]
+    datasink_name = paths['datasink_name']
+    fc_datasink_name = paths['fc_datasink_name']
+    # atlasPath=paths[10]
+    # brain_path=paths[11]
+    # mask_path=paths[12]
+    # atlas_path=paths[13]
+    # tr_path=paths[14]
+    # motion_params_path=paths[15]
+    # func2std_mat_path=paths[16]
+    # MNI3mm_path=paths[17]
+    demographics_file_path = paths['demographics_file_path']
+    phenotype_file_path = paths['phenotype_file_path']
+    # data_directory = paths[20]
+    hypothesis_test_dir = paths['hypothesis_test_dir']
 
     #  Runall:
 
@@ -300,7 +300,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
         # df_td_subid = df_td_lt18_m.as_matrix(columns=['SUB_ID'])
         #
         #
-        # combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + \
+        # combination = 'calc_residual' + str(int(motion_param_regression)) + 'filt' + \
         #           str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
         #           'smoothing' + str(int(smoothing))
         #
@@ -342,12 +342,12 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     # import pdb; pdb.set_trace()
 
 
-    combination = 'motionRegress' + str(int(motion_param_regression)) + \
-     'global' + str(int(global_signal_regression)) + 'smoothing' + str(int(smoothing)) +\
-     'filt' + str(int(band_pass_filtering))
+    combination = 'calc_residual' + str(int(calc_residual)) + \
+      'smoothing' + str(int(smoothing)) +\
+     'filt' + str(int(band_pass_filtering)) + 'calc_residual_options' + str(calc_residual_options)
 
     print("Combination: ",combination)
-    print(motion_param_regression,band_pass_filtering, global_signal_regression, smoothing)
+    print(calc_residual,band_pass_filtering, smoothing)
 
     save_destination = opj(hypothesis_test_dir,combination)
     print('Saving files in ',save_destination)
