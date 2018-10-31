@@ -331,8 +331,10 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
     bandpass = Node(afni.Bandpass(highpass=0.01, lowpass=0.1,
                              despike=False, no_detrend=True, notrans=True,
-                             outputtype='NIFTI_GZ'),name='bandpass')
+                             ),name='bandpass')
 
+
+    # outputtype='NIFTI_GZ'
     # bandpass = Node(afni.Bandpass(highpass=0.001, lowpass=0.01,
     #                          despike=False, no_detrend=True, notrans=True,
     #                          tr=2.0,outputtype='NIFTI_GZ'),name='bandpass')
@@ -793,6 +795,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         brain_roi_tensor = np.zeros((brain_data.header.get_data_shape()))
 
+        # TODO Remove the loops to decrease the running time
         print("Creating brain for Subject-",sub_id)
         for roi in range(num_ROIs):
             brain_voxel_counter = 0
