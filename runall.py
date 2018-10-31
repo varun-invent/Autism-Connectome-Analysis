@@ -22,8 +22,8 @@ import numpy as np
 
 # results_path = '/mnt/project1/home1/varunk/results/'
 
-SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
-number_of_selected_subjects = 3
+SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
+number_of_selected_subjects = 4
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
 
@@ -77,9 +77,8 @@ phenotype_file_path = task_info['phenotype_file_path']
 categoryInfo = None
 
 # Tissue - CSF, WM and GM masks path
-csf_path = opj(base_directory,datasink_name,'csf_masks/csf_mask_file_list.npy')
-gm_path = opj(base_directory,datasink_name,'gm_masks/gm_mask_file_list.npy')
-wm_path = opj(base_directory,datasink_name,'wm_masks/wm_mask_file_list.npy')
+csf_path = opj(base_directory,datasink_name,'csf_mask_paths/csf_mask_file_list.npy')
+wm_path = opj(base_directory,datasink_name,'wm_mask_paths/wm_mask_file_list.npy')
 
 
 
@@ -213,37 +212,39 @@ print(subject_list)
 
 # -----------------------------------------------------------------------------
 
-paths = [json_path,
-base_directory,
-motion_correction_bet_directory,
-parent_wf_directory,
-functional_connectivity_directory,
-coreg_reg_directory,
-atlas_resize_reg_directory,
-subject_list,
-datasink_name,
-fc_datasink_name,
-atlasPath,
-brain_path,
-mask_path,
-atlas_path,
-tr_path,
-motion_params_path,
-func2std_mat_path,
-MNI3mm_path,
-demographics_file_path,
-phenotype_file_path,
-data_directory,
-hypothesis_test_dir,
-fdr_results_dir,
-score_corr_dir,
-csf_path,
-gm_path,
-wm_path
-]
+paths = {
+        'json_path' : json_path,
+        'base_directory' : base_directory,
+        'motion_correction_bet_directory' : motion_correction_bet_directory,
+        'parent_wf_directory' : parent_wf_directory,
+        'functional_connectivity_directory' : functional_connectivity_directory,
+        'coreg_reg_directory' : coreg_reg_directory,
+        'atlas_resize_reg_directory' : atlas_resize_reg_directory,
+        'subject_list' : subject_list,
+        'datasink_name' : datasink_name,
+        'fc_datasink_name' : fc_datasink_name,
+        'atlasPath' : atlasPath,
+        'brain_path' : brain_path,
+        'mask_path' : mask_path,
+        'atlas_path' : atlas_path,
+        'tr_path' : tr_path,
+        'motion_params_path' : motion_params_path,
+        'func2std_mat_path' : func2std_mat_path,
+        'MNI3mm_path' : MNI3mm_path,
+        'demographics_file_path' : demographics_file_path,
+        'phenotype_file_path' : phenotype_file_path,
+        'data_directory' : data_directory,
+        'hypothesis_test_dir' : hypothesis_test_dir,
+        'fdr_results_dir' : fdr_results_dir,
+        'score_corr_dir' : score_corr_dir,
+        'csf_path' : csf_path,
+        'wm_path' : wm_path
+}
+
+
 
 PREPROC = 1
-POSTPROC = 0
+POSTPROC = 1
 HYPOTEST = 0
 FDRES = 0
 SCORE_CORR = 0
@@ -254,7 +255,7 @@ applyFisher = True
 # itr = (list(itertools.product([0, 1], repeat=3)))
 # itr = [(1,1,1,1,1)]
 # itr = [(1,0,0,0,0)]
-itr = [(1,0,1,1,1)]
+itr = [(1,1,1,1)]
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
@@ -300,29 +301,44 @@ if POSTPROC == 1:
     print('PostProcessing')
     log.write("Postprocessing Params\n")
 
-    for motion_param_regression, global_signal_regression, smoothing, band_pass_filtering, volCorrect in itr:
-        log.write("motion_param_regression  = %s\n"%(motion_param_regression))
-        log.write("global_signal_regression  = %s\n"%(global_signal_regression))
-        log.write("smoothing  = %s\n"%(smoothing))
-        log.write("band_pass_filtering  = %s\n"%(band_pass_filtering))
-        log.write("volCorrect  = %s\n"%(volCorrect))
-        if volCorrect == 1:
-            log.write("Vols for matching: %s\n"%(vols))
-        log.write("Number_of_skipped_volumes: %s\n"%(number_of_skipped_volumes))
-        log.write("Fisher Transform = %s\n"%(applyFisher))
-        log.flush()
+    calc_residual_options = np.array(['csf', 'wm', 'motion', 'global']) # 'const'
+    residual_options_itr = list(itertools.product([True, False], repeat= 4))
+    calc_residual_options_itr = [['const']]*len(residual_options_itr) # [['const'],['const'], ...]
+    for i, mask in enumerate(residual_options_itr):
+        calc_residual_options_itr[i].extend(calc_residual_options[list(mask)])
+
+    # overriding calc_residual_options_itr for testing
+    calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
+    for calc_residual_options in calc_residual_options_itr:
+        for calc_residual, smoothing, band_pass_filtering, volCorrect in itr:
+            log.write("calc_residual  = %s\n"%(calc_residual))
+            log.write("calc_residual_options = %s \n"%(str(calc_residual_options)))
+            # log.write("global_signal_regression  = %s\n"%(global_signal_regression))
+            log.write("smoothing  = %s\n"%(smoothing))
+            log.write("band_pass_filtering  = %s\n"%(band_pass_filtering))
+            log.write("volCorrect  = %s\n"%(volCorrect))
+            if volCorrect == 1:
+                log.write("Vols for matching: %s\n"%(vols))
+            log.write("Number_of_skipped_volumes: %s\n"%(number_of_skipped_volumes))
+            log.write("Fisher Transform = %s\n"%(applyFisher))
+            log.flush()
 
 
+            comb = ''
+            for a in calc_residual_options:
+                comb = comb + a
 
-        combination = 'motionRegress' + str(int(motion_param_regression)) + \
-         'global' + str(int(global_signal_regression)) + 'smoothing' + str(int(smoothing)) +\
-         'filt' + str(int(band_pass_filtering))
+            combination = 'calc_residual' + str(int(calc_residual)) + \
+            'smoothing' + str(int(smoothing)) +\
+            'filt' + str(int(band_pass_filtering)) +\
+            'calc_residual_options' + comb
 
-        print("Combination: ",combination)
-        functional_connectivity_directory =  combination
-        print(motion_param_regression,  global_signal_regression, smoothing,band_pass_filtering)
-        ppfc.main(paths, vols, motion_param_regression, global_signal_regression, band_pass_filtering, smoothing, volCorrect, \
-        number_of_skipped_volumes, num_proc)
+            print("Combination: ",combination)
+            functional_connectivity_directory =  combination
+            print(calc_residual, smoothing,band_pass_filtering)
+            save_npy = 0
+            ppfc.main(paths, vols, calc_residual, band_pass_filtering, smoothing, volCorrect, \
+            number_of_skipped_volumes, num_proc, save_npy, calc_residual_options)
 
 
 # ------------------- Hypothesis Test ------------------------------------------
@@ -340,8 +356,8 @@ if HYPOTEST == 1:
 
     # bugs = []
 
-    for motion_param_regression, global_signal_regression, smoothing,band_pass_filtering, volCorrect in itr:
-        ht.main(paths, bugs,applyFisher,categoryInfo, match, motion_param_regression, global_signal_regression, band_pass_filtering, \
+    for calc_residual, smoothing,band_pass_filtering, volCorrect in itr:
+        ht.main(paths, bugs,applyFisher,categoryInfo, match, calc_residual, band_pass_filtering, \
             smoothing, num_proc)
 
 # -------------------- FDR and results -----------------------------------------
@@ -365,6 +381,6 @@ if SCORE_CORR == 1:
 
     # bugs = []
 
-    for motion_param_regression, global_signal_regression, smoothing,band_pass_filtering, volCorrect in itr:
-        sc.main(paths, bugs,applyFisher,categoryInfo, match, motion_param_regression, global_signal_regression, band_pass_filtering, \
+    for calc_residual, smoothing,band_pass_filtering, volCorrect in itr:
+        sc.main(paths, bugs,applyFisher,categoryInfo, match, calc_residual, band_pass_filtering, \
             smoothing, num_proc)
