@@ -25,7 +25,7 @@ import nibabel as nib
 import json
 import numpy as np
 import pandas as pd
-from confounds import confounds_creation.calc_residuals as func_calc_residuals
+from confounds import confounds_creation as _calc_residuals
 
 
 
@@ -77,29 +77,31 @@ from confounds import confounds_creation.calc_residuals as func_calc_residuals
 #
 # MNI3mm_path = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample.nii')
 
-def main(paths, vols, motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, \
-smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy = 0 ):
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
-    functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
-    fc_datasink_name=paths[9]
-    atlasPath=paths[10]
-    brain_path=paths[11]
-    mask_path=paths[12]
-    atlas_path=paths[13]
-    tr_path=paths[14]
-    motion_params_path=paths[15]
-    func2std_mat_path=paths[16]
-    MNI3mm_path=paths[17]
-    demographics_file_path = paths[18]
-    phenotype_file_path = paths[19]
-    data_directory = paths[20]
+def main(paths, vols, calc_residual=0, band_pass_filtering=0, \
+smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy = 0, calc_residual_options=None):
+    json_path=paths['json_path']
+    base_directory=paths['base_directory']
+    motion_correction_bet_directory=paths['motion_correction_bet_directory']
+    parent_wf_directory=paths['parent_wf_directory']
+    functional_connectivity_directory=paths['functional_connectivity_directory']
+    coreg_reg_directory=paths['coreg_reg_directory']
+    atlas_resize_reg_directory=paths['atlas_resize_reg_directory']
+    subject_list = paths['subject_list']
+    datasink_name=paths['datasink_name']
+    fc_datasink_name=paths['fc_datasink_name']
+    atlasPath=paths['atlasPath']
+    brain_path=paths['brain_path']
+    mask_path=paths['mask_path']
+    atlas_path=paths['atlas_path']
+    tr_path=paths['tr_path']
+    motion_params_path=paths['motion_params_path']
+    func2std_mat_path=paths['func2std_mat_path']
+    MNI3mm_path=paths['MNI3mm_path']
+    demographics_file_path = paths['demographics_file_path']
+    phenotype_file_path = paths['phenotype_file_path']
+    data_directory = paths['data_directory']
+    csf_path = paths['csf_path']
+    wm_path = paths['wm_path']
 
 
     print('Brain Paths',brain_path)
@@ -112,7 +114,8 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy
     tr_path = np.load(tr_path)
     motion_params_path = np.load(motion_params_path)
     func2std_mat_path = np.load(func2std_mat_path)
-
+    csf_path = np.load(csf_path)
+    wm_path =np.load(wm_path)
 
 
 
@@ -142,13 +145,16 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy
         MNI3mm_path,\
         base_directory,\
         fc_datasink_name,\
-        motion_param_regression,\
+        calc_residual,\
         band_pass_filtering,\
-        global_signal_regression,\
         smoothing,\
         volcorrect,\
         num_proc,\
-        functional_connectivity_directory,save_npy )
+        functional_connectivity_directory,\
+        save_npy,\
+        csf_path,\
+        wm_path,\
+        calc_residual_options)
 
 
 
@@ -222,13 +228,15 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     MNI3mm_path,\
     base_directory,\
     fc_datasink_name,\
-   motion_param_regression,\
+   calc_residual,\
    band_pass_filtering,\
-   global_signal_regression,\
    smoothing,\
    volcorrect,\
    num_proc,\
-   functional_connectivity_directory, save_npy ):
+   functional_connectivity_directory, save_npy,\
+    csf_path,\
+    wm_path,\
+    calc_residual_options ):
 
     # ## Volume correction
     # * I have already extracted 4 volumes.
@@ -267,17 +275,19 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
 
-    def get_subject_filenames(subject_id,brain_path,mask_path,atlas_path,tr_path,motion_params_path,func2std_mat_path,MNI3mm_path):
+    def get_subject_filenames(subject_id,brain_path,mask_path,atlas_path,
+    tr_path,motion_params_path,func2std_mat_path,MNI3mm_path,csf_path,wm_path):
         import re
         from itertools import zip_longest
-        for brain,mask,atlas,tr,motion_param,func2std_mat in zip_longest(brain_path,mask_path,atlas_path,tr_path,motion_params_path,func2std_mat_path): #itertools helps to zip unequal save_file_list_in_mask
+        for brain,mask,atlas,tr,motion_param,func2std_mat, csf ,wm in zip_longest(
+        brain_path,mask_path,atlas_path,tr_path,motion_params_path,func2std_mat_path, csf_path ,wm_path): #itertools helps to zip unequal save_file_list_in_mask
         #  Source : https://stackoverflow.com/questions/11318977/zipping-unequal-lists-in-python-in-to-a-list-which-does-not-drop-any-element-fro
-            print('*******************',brain,mask,atlas,tr,motion_param,func2std_mat)
+            print('*******************',brain,mask,atlas,tr,motion_param,func2std_mat, csf ,wm)
 
             sub_id_extracted = re.search('.+_subject_id_(\d+)', brain).group(1)
             if str(subject_id) in brain:
     #             print("Files for subject ",subject_id,brain,mask,atlas,tr,motion_param)
-                return brain,mask,atlas,tr,motion_param,func2std_mat,MNI3mm_path
+                return brain,mask,atlas,tr,motion_param,func2std_mat,MNI3mm_path,csf ,wm
 
         print ('Unable to locate Subject: ',subject_id,'extracted: ',sub_id_extracted)
         # print ('Unable to locate Subject: ',subject_id)
@@ -289,8 +299,9 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
     # Make a node
-    getSubjectFilenames = Node(Function(function=get_subject_filenames, input_names=['subject_id','brain_path','mask_path','atlas_path','tr_path','motion_params_path','func2std_mat_path','MNI3mm_path'],
-                                    output_names=['brain','mask','atlas','tr','motion_param','func2std_mat', 'MNI3mm_path']), name='getSubjectFilenames')
+    getSubjectFilenames = Node(Function(function=get_subject_filenames, input_names=['subject_id',
+    'brain_path','mask_path','atlas_path','tr_path','motion_params_path','func2std_mat_path','MNI3mm_path','csf_path','wm_path'],
+    output_names=['brain','mask','atlas','tr','motion_param','func2std_mat', 'MNI3mm_path','csf','wm']), name='getSubjectFilenames')
 
 
     getSubjectFilenames.inputs.brain_path = brain_path
@@ -300,7 +311,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     getSubjectFilenames.inputs.motion_params_path = motion_params_path
     getSubjectFilenames.inputs.func2std_mat_path = func2std_mat_path
     getSubjectFilenames.inputs.MNI3mm_path = MNI3mm_path
-
+    getSubjectFilenames.inputs.csf_path = csf_path
+    getSubjectFilenames.inputs.wm_path = wm_path
 
 
 
@@ -547,7 +559,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file','motion_file'],
     #                                 output_names=['out_file']), name='calc_residuals')
 
-    calc_residuals = Node(Function(function=func_calc_residuals, input_names=['in_file', 'motion_file',
+    calc_residuals = Node(Function(function=_calc_residuals.calc_residuals, input_names=['in_file', 'motion_file',
      'csf_mask_path', 'wm_mask_path','global_signal_flag','const','check_orthogonality'],
                                     output_names=['out_file_list']), name='calc_residuals')
 
@@ -881,7 +893,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
 
-    # motion_param_regression = 1
+    # calc_residual = 1
     # band_pass_filtering = 0
     # global_signal_regression = 0
     # smoothing = 1
@@ -889,13 +901,18 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     if num_proc == None:
         num_proc = 7
 
-    combination = 'motionRegress' + str(int(motion_param_regression)) + \
-     'global' + str(int(global_signal_regression)) + 'smoothing' + str(int(smoothing)) +\
-     'filt' + str(int(band_pass_filtering))
+    comb = ''
+    for a in calc_residual_options:
+        comb = comb + a
+
+    combination = 'calc_residual' + str(int(calc_residual)) + \
+     'smoothing' + str(int(smoothing)) +\
+     'filt' + str(int(band_pass_filtering)) +\
+     'calc_residual_options' + comb
 
     print("Combination: ",combination)
 
-    binary_string = str(int(motion_param_regression)) + str(int(global_signal_regression)) + \
+    binary_string = str(int(calc_residual)) + \
     str(int(smoothing)) + str(int(band_pass_filtering)) + str(int(volcorrect))
 
     base_dir = opj(base_directory,functional_connectivity_directory)
@@ -912,18 +929,23 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
     nodes = [
     calc_residuals,
-    globalSignalRemoval,
     spatialSmooth,
     bandpass,
     volCorrect]
+    # globalSignalRemoval, We dont need it now
 
 
-    # from nipype.interfaces import fsl
 
     old_node = getSubjectFilenames
     old_node_output = 'brain'
 
-    binary_string = binary_string+'0' # so that the loop runs one more time
+    binary_string = binary_string + '0' # so that the loop runs one more time
+
+    def select_item_from_array(arr, index=0):
+        import numpy as np
+        arr = np.array(arr)
+        return arr[index]
+
     for idx, include in enumerate(binary_string):
         # 11111
         # motion_param_regression
@@ -933,7 +955,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         # volcorrect
 
         if old_node == calc_residuals:
-            old_node_output = 'out_file_list'
+            old_node_output = ('out_file_list',select_item_from_array,-1)
+            # Desired residual file is the last item of the array i.e at (-1)
         elif old_node == extract :
             old_node_output = 'roi_file'
         elif old_node == globalSignalRemoval:
@@ -949,28 +972,33 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
         if int(include):
-            # if old_node is None:
-            #
-            #     wf.add_nodes([nodes[idx]])
-            #
-            # else:
-
-
 
             new_node = nodes[idx]
 
 
             if new_node == calc_residuals:
-                wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
+                # 'const','csf', 'wm', , 'global'
+                if 'const' in calc_residual_options:
+                    calc_residuals.inputs.const = True
+
+                if 'motion' in calc_residual_options:
+                    wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
+                if 'global' in calc_residual_options:
+                    calc_residuals.inputs.global_signal_flag = True
+
+                if 'csf' in calc_residual_options:
+                    wf.connect([(getSubjectFilenames, calc_residuals, [('csf', 'csf_mask_path')])])
+                if 'wm' in calc_residual_options:
+                    wf.connect([(getSubjectFilenames, calc_residuals, [('wm', 'wm_mask_path')])])
                 new_node_input = 'in_file'
 
             elif new_node == extract :
                 wf.connect([( volCorrect, extract, [('t_min','t_min')])])
                 new_node_input = 'in_file'
 
-            elif new_node == globalSignalRemoval:
-                wf.connect([(getSubjectFilenames, globalSignalRemoval, [('mask','mask_file')])])
-                new_node_input = 'in_file'
+            # elif new_node == globalSignalRemoval: We dont need it now
+            #     wf.connect([(getSubjectFilenames, globalSignalRemoval, [('mask','mask_file')])])
+            #     new_node_input = 'in_file'
 
             elif new_node == bandpass:
                 wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
