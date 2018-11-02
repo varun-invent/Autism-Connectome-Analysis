@@ -14,6 +14,7 @@ from bids.grabbids import BIDSLayout
 import time
 from pathlib import Path
 import numpy as np
+import shutil
 
 # ------------- Paths ----------------------------------------------------------------------------------------
 
@@ -22,8 +23,8 @@ import numpy as np
 
 # results_path = '/mnt/project1/home1/varunk/results/'
 
-SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
-number_of_selected_subjects = 4
+SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
+number_of_selected_subjects = 2
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
 
@@ -293,7 +294,14 @@ if PREPROC == 1:
 
     log.flush()
 
-    prep.main(paths,options_binary_string, ANAT, num_proc)
+    try:
+        prep.main(paths,options_binary_string, ANAT, num_proc)
+    except:
+        print('Error Occured in Preprocessing')
+
+    # try:
+    # except shutil.SameFileError:
+    #     pass
 
 
 # ------------------------PostProcess------------------------------------------
