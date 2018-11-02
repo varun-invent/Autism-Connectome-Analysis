@@ -713,6 +713,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         brain_data = nib.load(in_file)
         brain = brain_data.get_data()
 
+        # _global_mask = (data != 0).sum(-1) != 0
+
         x_dim, y_dim, z_dim, num_volumes = brain.shape
 
 
@@ -720,11 +722,18 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         x_dim, y_dim, z_dim = mask_data.shape
 
-        for i in range(x_dim):
-            for j in range(y_dim):
-                for k in range(z_dim):
-                    if mask[i,j,k] == 1:
-                        num_brain_voxels = num_brain_voxels + 1
+        # for i in range(x_dim):
+        #     for j in range(y_dim):
+        #         for k in range(z_dim):
+        #             if mask[i,j,k] == 1:
+        #                 num_brain_voxels = num_brain_voxels + 1
+
+        # Optimized: number of brain voxels
+        num_brain_voxels_optimized = len(np.where(mask == 1)[0])
+        num_brain_voxels = num_brain_voxels_optimized
+        # Check
+        # assert(num_brain_voxels == num_brain_voxels_optimized)
+        # --------------------------------------------------------------------
 
         # Initialize a matrix of ROI time series and voxel time series
 
@@ -733,13 +742,22 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         # Fill up the voxel_matrix
 
-        voxel_counter = 0
-        for i in range(x_dim):
-            for j in range(y_dim):
-                for k in range(z_dim):
-                    if mask[i,j,k] == 1:
-                        voxel_matrix[voxel_counter,:] = brain[i,j,k,:]
-                        voxel_counter = voxel_counter + 1
+        # voxel_counter = 0
+        # for i in range(x_dim):
+        #     for j in range(y_dim):
+        #         for k in range(z_dim):
+        #             if mask[i,j,k] == 1:
+        #                 voxel_matrix[voxel_counter,:] = brain[i,j,k,:]
+        #                 voxel_counter = voxel_counter + 1
+
+
+        # Optimized:
+        voxel_matrix_optimized = brain[mask == 1]
+        voxel_matrix = voxel_matrix
+        # print('**************Size: voxel_matrix %s voxel_matrix_optimized %s'%(voxel_matrix.shape, voxel_matrix_optimized.shape))
+        # Check
+        # assert((voxel_matrix == voxel_matrix_optimized).all())
+
 
 
         # Fill up the ROI_matrix
@@ -797,18 +815,29 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         # TODO Remove the loops to decrease the running time
         print("Creating brain for Subject-",sub_id)
+        # for roi in range(num_ROIs):
+        #     brain_voxel_counter = 0
+        #     for i in range(x_dim):
+        #         for j in range(y_dim):
+        #             for k in range(z_dim):
+        #                 if mask[i,j,k] == 1:
+        #                     brain_roi_tensor[i,j,k,roi] = roi_brain_matrix[roi,brain_voxel_counter]
+        #                     brain_voxel_counter = brain_voxel_counter + 1
+        #
+        #
+        #     assert (brain_voxel_counter == len(roi_brain_matrix[roi,:]))
+        # print("Created brain for Subject-",sub_id)
+
+        # Optimized
+        # print("Check Optimised  brain_roi_tensor is correct or not")
+        brain_roi_tensor_optimized = np.zeros((brain_data.header.get_data_shape()))
         for roi in range(num_ROIs):
-            brain_voxel_counter = 0
-            for i in range(x_dim):
-                for j in range(y_dim):
-                    for k in range(z_dim):
-                        if mask[i,j,k] == 1:
-                            brain_roi_tensor[i,j,k,roi] = roi_brain_matrix[roi,brain_voxel_counter]
-                            brain_voxel_counter = brain_voxel_counter + 1
+            brain_roi_tensor_roi_voxels = brain_roi_tensor_optimized[:,:,:,roi]
+            brain_roi_tensor_roi_voxels[mask == 1] = roi_brain_matrix[roi,:]
 
-
-            assert (brain_voxel_counter == len(roi_brain_matrix[roi,:]))
         print("Created brain for Subject-",sub_id)
+
+        # assert((brain_roi_tensor == brain_roi_tensor_optimized).all())
 
 
         path = os.getcwd()
