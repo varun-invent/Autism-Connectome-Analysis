@@ -83,17 +83,17 @@ from confounds import wf_main_for_masks as wfm
 
 def main(paths, options_binary_string, ANAT , num_proc = 7):
 
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
+    json_path=paths['json_path']
+    base_directory=paths['base_directory']
+    motion_correction_bet_directory=paths['motion_correction_bet_directory']
+    parent_wf_directory=paths['parent_wf_directory']
     # functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
+    coreg_reg_directory=paths['coreg_reg_directory']
+    atlas_resize_reg_directory=paths['atlas_resize_reg_directory']
+    subject_list = paths['subject_list']
+    datasink_name=paths['datasink_name']
     # fc_datasink_name=paths[9]
-    atlasPath=paths[10]
+    atlasPath=paths['atlasPath']
     # brain_path=paths[11]
     # mask_path=paths[12]
     # atlas_path=paths[13]
@@ -103,7 +103,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     # MNI3mm_path=paths[17]
     # demographics_file_path = paths[18]
     # phenotype_file_path = paths[19]
-    data_directory = paths[20]
+    data_directory = paths['data_directory']
 
 
 
@@ -511,7 +511,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         np.save('brain_file_list',file_list)
         file_name = 'brain_file_list.npy'
-        out_brain = opj(os.getcwd(),file_name) # path
+        # out_brain = opj(os.getcwd(),file_name) # path
+        out_brain = os.path.abspath(file_name)
         return out_brain
 
     def save_file_list_function_in_mask(in_mask):
@@ -524,7 +525,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('mask_file_list',file_list2)
           file_name2 = 'mask_file_list.npy'
-          out_mask = opj(os.getcwd(),file_name2) # path
+          # out_mask = opj(os.getcwd(),file_name2) # path
+          out_mask = os.path.abspath(file_name2)
           return out_mask
 
     def save_file_list_function_in_motion_params(in_motion_params):
@@ -537,7 +539,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('motion_params_file_list',file_list3)
           file_name3 = 'motion_params_file_list.npy'
-          out_motion_params = opj(os.getcwd(),file_name3) # path
+          # out_motion_params = opj(os.getcwd(),file_name3) # path
+          out_motion_params = os.path.abspath(file_name3)
           return out_motion_params
 
     def save_file_list_function_in_motion_outliers(in_motion_outliers):
@@ -550,7 +553,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('motion_outliers_file_list',file_list4)
           file_name4 = 'motion_outliers_file_list.npy'
-          out_motion_outliers = opj(os.getcwd(),file_name4) # path
+          # out_motion_outliers = opj(os.getcwd(),file_name4) # path
+          out_motion_outliers = os.path.abspath(file_name4)
           return out_motion_outliers
 
     def save_file_list_function_in_joint_xformation_matrix(in_joint_xformation_matrix):
@@ -563,7 +567,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('joint_xformation_matrix_file_list',file_list5)
           file_name5 = 'joint_xformation_matrix_file_list.npy'
-          out_joint_xformation_matrix = opj(os.getcwd(),file_name5) # path
+          # out_joint_xformation_matrix = opj(os.getcwd(),file_name5) # path
+          out_joint_xformation_matrix = os.path.abspath(file_name5)
           return out_joint_xformation_matrix
 
     def save_file_list_function_in_tr(in_tr):
@@ -576,7 +581,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('tr_list',tr_list)
           file_name6 = 'tr_list.npy'
-          out_tr = opj(os.getcwd(),file_name6) # path
+          # out_tr = opj(os.getcwd(),file_name6) # path
+          out_tr = os.path.abspath(file_name6)
           return out_tr
 
     def save_file_list_function_in_atlas(in_atlas):
@@ -589,7 +595,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('atlas_file_list',file_list7)
           file_name7 = 'atlas_file_list.npy'
-          out_atlas = opj(os.getcwd(),file_name7) # path
+          # out_atlas = opj(os.getcwd(),file_name7) # path
+          out_atlas = os.path.abspath(file_name7)
           return out_atlas
 
     def save_file_list_function_in_confound_masks(in_csf_mask, in_wm_mask):
@@ -602,16 +609,16 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         print('######################## File List ######################: \n',file_list8)
         np.save('csf_mask_file_list',file_list8)
         file_name8 = 'csf_mask_file_list.npy'
-        out_csf_mask = opj(os.getcwd(),file_name8) # path
-
+        # out_csf_mask = opj(os.getcwd(),file_name8) # path
+        out_csf_mask = os.path.abspath(file_name8)
 
 
         file_list9 = np.asarray(in_wm_mask)
         print('######################## File List ######################: \n',file_list9)
         np.save('wm_mask_file_list',file_list9)
         file_name9 = 'wm_mask_file_list.npy'
-        out_wm_mask = opj(os.getcwd(),file_name9) # path
-
+        # out_wm_mask = opj(os.getcwd(),file_name9) # path
+        out_wm_mask = os.path.abspath(file_name9)
 
         return out_csf_mask, out_wm_mask
 
@@ -633,8 +640,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         df.to_csv(file_name,index=False)
 
-        qc_csv = opj(os.getcwd(),file_name) # path
-
+        # qc_csv = opj(os.getcwd(),file_name) # path
+        qc_csv = os.path.abspath(file_name)
         return qc_csv
 
 
