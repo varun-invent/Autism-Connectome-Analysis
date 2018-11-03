@@ -64,14 +64,14 @@ def get_wf_main(name='wf_main'):
         print('voxels_count_wm_prior ',voxels_count_wm_prior)
         print('voxels_count_csf_mask ',voxels_count_csf_mask)
         print('voxels_count_wm_mask ',voxels_count_wm_mask)
-        print('A_minus_B_csf ',A_minus_B_csf)
-        print('A_minus_B_wm ',A_minus_B_wm)
-        print('B_minus_A_csf ',B_minus_A_csf)
-        print('B_minus_A_wm ',B_minus_A_wm)
-        print('A_union_B_csf ',A_union_B_csf)
-        print('A_union_B_wm ',A_union_B_wm)
-        print('A_intersection_B_csf ',A_intersection_B_csf)
-        print('A_intersection_B_wm ',A_intersection_B_wm)
+        print('prior_minus_mask_csf ',A_minus_B_csf)
+        print('prior_minus_mask_wm ',A_minus_B_wm)
+        print('mask_minus_prior_csf ',B_minus_A_csf)
+        print('mask_minus_prior_wm ',B_minus_A_wm)
+        print('prior_union_mask_csf ',A_union_B_csf)
+        print('prior_union_mask_wm ',A_union_B_wm)
+        print('prior_intersection_mask_csf ',A_intersection_B_csf)
+        print('prior_intersection_mask_wm ',A_intersection_B_wm)
         quality_csf =  A_intersection_B_csf/A_union_B_csf
         quality_wm =  A_intersection_B_wm/A_union_B_wm
         print('quality_csf ',quality_csf)
@@ -86,14 +86,14 @@ def get_wf_main(name='wf_main'):
         dict['voxels_count_wm_prior'] = [voxels_count_wm_prior]
         dict['voxels_count_csf_mask'] = [voxels_count_csf_mask]
         dict['voxels_count_wm_mask'] = [voxels_count_wm_mask]
-        dict['A_minus_B_csf'] = [A_minus_B_csf]
-        dict['A_minus_B_wm'] = [A_minus_B_wm]
-        dict['B_minus_A_csf'] = [B_minus_A_csf]
-        dict['B_minus_A_wm'] = [B_minus_A_wm]
-        dict['A_union_B_csf'] = [A_union_B_csf]
-        dict['A_union_B_wm'] = [A_union_B_wm]
-        dict['A_intersection_B_csf'] =  [A_intersection_B_csf]
-        dict['A_intersection_B_wm'] = [A_intersection_B_wm]
+        dict['prior_minus_mask_csf'] = [A_minus_B_csf]
+        dict['prior_minus_mask_wm'] = [A_minus_B_wm]
+        dict['mask_minus_prior_csf'] = [B_minus_A_csf]
+        dict['mask_minus_prior_wm'] = [B_minus_A_wm]
+        dict['prior_union_mask_csf'] = [A_union_B_csf]
+        dict['prior_union_mask_wm'] = [A_union_B_wm]
+        dict['prior_intersection_mask_csf'] =  [A_intersection_B_csf]
+        dict['prior_intersection_mask_wm'] = [A_intersection_B_wm]
         dict['quality_csf'] = [quality_csf]
         dict['quality_wm'] = [quality_wm]
 
