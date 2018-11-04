@@ -1,4 +1,4 @@
-from nipype.interfaces.fsl import (FLIRT, FAST, ConvertXFM, ImageMaths, MultiImageMaths, ApplyMask)
+wmwmfrom nipype.interfaces.fsl import (FLIRT, FAST, ConvertXFM, ImageMaths, MultiImageMaths, ApplyMask)
 import nibabel as nib
 import numpy as np
 from scipy.ndimage.morphology import binary_erosion as erode
@@ -52,7 +52,6 @@ def get_wf_tissue_masks(name='wf_tissue_masks'):
 
     def select_item_from_array(arr, index=0):
         import numpy as np
-        # print('###################################### Path %s: %s'%(index, arr[index]))
         arr = np.array(arr)
         return arr[index]
 
@@ -111,6 +110,14 @@ def get_wf_tissue_masks(name='wf_tissue_masks'):
     wf_tissue_masks.connect(threshold_csf, 'out_file', csf_mask, 'in_file')
     wf_tissue_masks.connect(std2func_xform_eroded_brain, 'out_file', csf_mask, 'mask_file')
 
+    # Masking the outer brain WM that might be present due to poor BET
+
+    wm_mask = Node(interface=ApplyMask(),
+                       name='wm_mask')
+    wf_tissue_masks.connect(threshold_wm, 'out_file', wm_mask, 'in_file')
+    wf_tissue_masks.connect(std2func_xform_eroded_brain, 'out_file', wm_mask, 'mask_file')
+
+
     # wm_mask = Node(interface=ApplyMask(),
     #                    name='wm_mask')
     # wf_tissue_masks.connect(std2func_xform_wm, 'out_file', wm_mask, 'in_file')
@@ -123,7 +130,7 @@ def get_wf_tissue_masks(name='wf_tissue_masks'):
 
     wf_tissue_masks.connect(csf_mask, 'out_file', outputspec, 'csf_mask')
     # wf_tissue_priors.connect(threshold_gm, 'out_file', outputspec, 'gm_tissue_prior_path')
-    wf_tissue_masks.connect(threshold_wm, 'out_file', outputspec, 'wm_mask')
+    wf_tissue_masks.connect(wm_mask, 'out_file', outputspec, 'wm_mask')
 
     return wf_tissue_masks
 
