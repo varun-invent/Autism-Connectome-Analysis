@@ -81,6 +81,10 @@ categoryInfo = None
 csf_path = opj(base_directory,datasink_name,'csf_mask_paths/csf_mask_file_list.npy')
 wm_path = opj(base_directory,datasink_name,'wm_mask_paths/wm_mask_file_list.npy')
 
+#  Binarized atlas mask path
+
+binarized_atlas_mask_path = task_info["binarized_atlas_mask_path"]
+
 
 
 # --------------- Creating Log --------------------
@@ -107,7 +111,7 @@ number_of_skipped_volumes = 4 # TODO: Hardcoded inside preprocessing code: Make 
 #  True volumes will be vols - number_of_skipped_volumes
 
 
-num_proc = 20
+num_proc = 27
 
 
 # number_of_subjects = -1
@@ -239,15 +243,16 @@ paths = {
         'fdr_results_dir' : fdr_results_dir,
         'score_corr_dir' : score_corr_dir,
         'csf_path' : csf_path,
-        'wm_path' : wm_path
+        'wm_path' : wm_path,
+        'binarized_atlas_mask_path' : binarized_atlas_mask_path
 }
 
 
 
-PREPROC = 1
-POSTPROC = 1
+PREPROC = 0
+POSTPROC = 0
 HYPOTEST = 0
-FDRES = 0
+FDRES = 1
 SCORE_CORR = 0
 
 match = 1 # Age matching
@@ -304,16 +309,18 @@ if PREPROC == 1:
     #     pass
 
 
+# Options for Calculating residuals
+calc_residual_options = np.array(['csf', 'wm', 'motion', 'global']) # 'const'
+residual_options_itr = list(itertools.product([True, False], repeat= 4))
+calc_residual_options_itr = [['const']]*len(residual_options_itr) # [['const'],['const'], ...]
+for i, mask in enumerate(residual_options_itr):
+    calc_residual_options_itr[i].extend(calc_residual_options[list(mask)])
+
 # ------------------------PostProcess------------------------------------------
-if POSTPROC == 1:
+if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
     print('PostProcessing')
     log.write("Postprocessing Params\n")
 
-    calc_residual_options = np.array(['csf', 'wm', 'motion', 'global']) # 'const'
-    residual_options_itr = list(itertools.product([True, False], repeat= 4))
-    calc_residual_options_itr = [['const']]*len(residual_options_itr) # [['const'],['const'], ...]
-    for i, mask in enumerate(residual_options_itr):
-        calc_residual_options_itr[i].extend(calc_residual_options[list(mask)])
 
     # overriding calc_residual_options_itr for testing
     calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
@@ -345,38 +352,35 @@ if POSTPROC == 1:
             functional_connectivity_directory =  combination
             print(calc_residual, smoothing,band_pass_filtering)
             save_npy = 0
-            ppfc.main(paths, vols, calc_residual, band_pass_filtering, smoothing, volCorrect, \
-            number_of_skipped_volumes, num_proc, save_npy, calc_residual_options)
+
+            if POSTPROC == 1:
+                ppfc.main(paths, vols, calc_residual, band_pass_filtering, smoothing, volCorrect, \
+                number_of_skipped_volumes, num_proc, save_npy, calc_residual_options)
 
 
 # ------------------- Hypothesis Test ------------------------------------------
-# ABIDE1 BUGS
-# bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
 
-if HYPOTEST == 1:
-    print('Hypothesis Test')
+            if HYPOTEST == 1:
+                print('Hypothesis Test')
+                log.write("Hypothesis Test\n")
+                log.flush()
 
-    # itr = (list(itertools.product([0, 1], repeat=3)))
-    #
-    # itr = [(1,1,0,1,1)]
+                # for calc_residual, smoothing,band_pass_filtering, volCorrect in itr:
+                ht.main(paths, bugs,applyFisher,categoryInfo, match, calc_residual, band_pass_filtering, \
+                    smoothing, num_proc, calc_residual_options)
 
-    # bugs = ['51232','51233','51242','51243','51244','51245','51246','51247','51270','51310','50045', '51276', '50746', '50727', '51276']
 
-    # bugs = []
+            # -------------------- FDR and results -----------------------------------------
 
-    for calc_residual, smoothing,band_pass_filtering, volCorrect in itr:
-        ht.main(paths, bugs,applyFisher,categoryInfo, match, calc_residual, band_pass_filtering, \
-            smoothing, num_proc)
+            if FDRES == 1:
+                print('FDR Correction and computing files for visualization of results')
+                log.write("FDR Correction and computing files for visualization of results\n")
+                log.flush()
 
-# -------------------- FDR and results -----------------------------------------
+                # for params in itr:
+                fdres.main(paths, calc_residual, smoothing, band_pass_filtering,\
+                 volCorrect, num_proc, calc_residual_options)
 
-if FDRES == 1:
-    print('FDR Correction and computing files for visualization of results')
-    # itr = (list(itertools.product([0, 1], repeat=3)))
-
-    # itr = [(1,1,0,1,1)]
-    for params in itr:
-        fdres.main(paths, params, num_proc = 7)
 
 
 if SCORE_CORR == 1:
