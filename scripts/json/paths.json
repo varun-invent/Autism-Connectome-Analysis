@@ -1,10 +1,10 @@
 {
-"base_directory_for_results" : "/mnt/scratch/svn50/varunk/resultsABIDE1",
+"base_directory_for_results" : "/mnt/project2/home/varunk/fMRI/results/resultsABIDE1_2",
 "data_directory" : "/mnt/project1/rawData/fMRI/incoming/ABIDE/RawDataBIDs" ,
 "atlas_path" : "/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-2mm.nii.gz",
 "demographics_file_path" : "/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/notebooks/demographics.csv",
 "phenotype_file_path" : "/mnt/project1/rawData/fMRI/incoming/ABIDE/RawDataBIDs/composite_phenotypic_file.csv",
-
+"binarized_atlas_mask_path" : "/mnt/project2/home/varunk/fMRI/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz", 
 "motion_correction_bet_directory" : "motion_correction_bet",
 "parent_wf_directory" : "preprocess",
 "coreg_reg_directory" : "coreg_reg",
