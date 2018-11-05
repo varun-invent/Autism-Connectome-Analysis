@@ -1,5 +1,5 @@
 import numpy as np
-
+import pandas as pb
 # Use the motion parameters to fid the bad brains
 # Use the qc_csv to find the bad brains
 
@@ -40,11 +40,38 @@ def motion_outliers(motion_params_file, threshold):
             outliers_sub_ids.append(sub_id)
     return outliers_sub_ids
 
+
+
+def csf_wm_outliers(qc_csv_file, csf_thresh, wm_thresh):
+    outliers_sub_id = []
+    wm_csf_qc_df = pb.read_csv(qc_csv_file)
+    wm_csf_qc_mat = wm_csf_qc_df[['sub_id','quality_csf','quality_wm']].values
+    for i in range(wm_csf_qc_mat.shape[0]):
+        if wm_csf_qc_mat[1] < csf_thresh:
+            print('Subject %s has a very poor CSF quality of %s'%(wm_csf_qc_mat[0],wm_csf_qc_mat[1]))
+            outliers_sub_id.append(wm_csf_qc_mat[0])
+        if wm_csf_qc_mat[1] < wm_thresh:
+            print('Subject %s has a very poor WM quality of %s'%(wm_csf_qc_mat[0],wm_csf_qc_mat[2]))
+            if wm_csf_qc_mat[0] not in outliers_sub_id:
+                outliers_sub_id.append(wm_csf_qc_mat[0])
+    return outliers_sub_id
+
+
+
+
+
+
 if __name__ == "__main__":
     motion_params_npy = '/mnt/project2/home/varunk/fMRI/results/resultsABIDE1_2/'+\
     'Preprocess_Datasink/motion_params_paths/motion_params_file_list.npy'
 
-    thresh = 2.5
-    outliers_sub_ids = motion_outliers(motion_params_npy, thresh)
+    qc_csv_file = '/mnt/project2/home/varunk/fMRI/results/resultsABIDE1_2/'+\
+    'Preprocess_Datasink/qc_csv/qc.csv'
+
+    motion_thresh = 2.5
+    outliers_sub_ids = motion_outliers(motion_params_npy, motion_thresh)
     print(outliers_sub_ids)
         # print(num_outlier_entries)
+
+    csf_thresh = 0.015
+    wm_thresh = 
