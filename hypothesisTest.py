@@ -45,7 +45,7 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 
 
 def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0, band_pass_filtering=0, \
-    smoothing=0, num_proc = 7):
+    smoothing=0, num_proc = 7, calc_residual_options = None):
     # json_path=paths[0]
     base_directory = paths['base_directory']
     motion_correction_bet_directory = paths['motion_correction_bet_directory']
@@ -68,6 +68,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     phenotype_file_path = paths['phenotype_file_path']
     # data_directory = paths[20]
     hypothesis_test_dir = paths['hypothesis_test_dir']
+    binarized_atlas_mask_path = paths['binarized_atlas_mask_path']
 
     #  Runall:
 
@@ -341,10 +342,14 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
 
     # import pdb; pdb.set_trace()
 
+    comb = ''
+    for a in calc_residual_options:
+        comb = comb + a
 
     combination = 'calc_residual' + str(int(calc_residual)) + \
-      'smoothing' + str(int(smoothing)) +\
-     'filt' + str(int(band_pass_filtering)) + 'calc_residual_options' + str(calc_residual_options)
+    'smoothing' + str(int(smoothing)) +\
+    'filt' + str(int(band_pass_filtering)) +\
+    'calc_residual_options' + comb
 
     print("Combination: ",combination)
     print(calc_residual,band_pass_filtering, smoothing)
@@ -402,7 +407,6 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     # Created the below mask manually using BET
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample_mask.nii.gz')
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'atlas_resize_reg_directory/resample_atlas/fullbrain_atlas_thr0-2mm_resample_binarize.nii.gz')
-    mask = '/home1/varunk/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz'
-
+    mask = binarized_atlas_mask_path
     # print('Saving the results in ', hypothesis_test_dir)
     tt.main(autistic_list,td_list, combination, mask, applyFisher, hypothesis_test_dir) # sends the file path of autistic and TD and processing params
