@@ -784,8 +784,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     wf_atlas_resize_reg.connect(wf_confound_masks, 'outputspec.wm_tissue_prior_path',
                                             save_file_list_in_confound_masks, 'in_wm_mask' )
 
-    wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_csf_mask', dataSink, 'csf_mask_paths.@out_csf_mask')
-    wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_wm_mask', dataSink, 'wm_mask_paths.@out_wm_mask')
+    wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_csf_mask', dataSink, 'csf_mask_paths.@out_csf_tissue_prior_mask')
+    wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_wm_mask', dataSink, 'wm_mask_paths.@out_wm_tissue_prior_mask')
 
     #  Creating and saving the QC CSV
     wf_atlas_resize_reg.connect(wf_confound_masks,'outputspec.qc_stats_dict', save_qc_csv, 'in_dict')
