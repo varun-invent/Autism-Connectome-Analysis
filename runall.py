@@ -23,8 +23,8 @@ import shutil
 
 # results_path = '/mnt/project1/home1/varunk/results/'
 
-SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
-number_of_selected_subjects = 2
+SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
+number_of_selected_subjects = 4
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
 
@@ -139,6 +139,24 @@ bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', 
 bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247',
 '51270','51310', '50727']
 
+bugs_abide1.extend(['50697','50694','50626','50625','50624','50618','50617','51324','51296','51263','50746'])
+
+'''
+ABIDE 1 Bugs:
+
+50697 Neck
+50694 Neck
+50626 Neck
+50625 Neck
+50624 Neck
+50618 Blurred and skull	Bad anat
+50617 Neck
+51324 Flipped brain	Due to improper skull strip
+51296 Too blurred and spread and a lot of skull
+51263 Flipped brain	Due to improper skull strip
+50746 Flipped brain	Due to improper skull strip
+
+'''
 
 '''
 UCLA_1
@@ -249,10 +267,10 @@ paths = {
 
 
 
-PREPROC = 0
-POSTPROC = 0
+PREPROC = 1
+POSTPROC = 1
 HYPOTEST = 0
-FDRES = 1
+FDRES = 0
 SCORE_CORR = 0
 
 match = 1 # Age matching
@@ -317,6 +335,8 @@ for i, mask in enumerate(residual_options_itr):
     calc_residual_options_itr[i].extend(calc_residual_options[list(mask)])
 
 # ------------------------PostProcess------------------------------------------
+
+
 if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
     print('PostProcessing')
     log.write("Postprocessing Params\n")
