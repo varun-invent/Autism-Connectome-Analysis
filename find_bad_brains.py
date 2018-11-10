@@ -7,6 +7,7 @@ import pandas as pb
 
 
 def read_par_file(motion_params_file):
+    volumes_count = 0
     trans_x = []
     trans_y = []
     trans_z = []
@@ -24,19 +25,26 @@ def read_par_file(motion_params_file):
             rot_x.append(float(line[0]))
             rot_y.append(float(line[2]))
             rot_z.append(float(line[4]))
-    return trans_x, trans_y, trans_z, rot_x, rot_y, rot_z
+            volumes_count = volumes_count + 1
+    return trans_x, trans_y, trans_z, rot_x, rot_y, rot_z, volumes_count
 
-def motion_outliers(motion_params_file, threshold):
+def motion_outliers(motion_params_file, motion_threshold,\
+                        outliers_percentage_threshold = 30):
     motion_params_paths = np.load(motion_params_npy)
     outliers_sub_ids = []
     for subject_param_path in motion_params_paths:
         sub_id = subject_param_path.split('/')[-1].split('_')[0].split('-')[1]
-        trans_x, trans_y, trans_z, rot_x, rot_y, rot_z = read_par_file(subject_param_path)
+        trans_x, trans_y, trans_z, rot_x, rot_y, rot_z, volumes_count = \
+                                            read_par_file(subject_param_path)
+
         params = np.array([trans_x, trans_y, trans_z, rot_x, rot_y, rot_z]).T
-        outlier_idx = np.where(np.abs(params) > thresh)
+        outlier_idx = np.where(np.abs(params) > motion_threshold)
         num_outlier_entries = len(set(outlier_idx[0]))
-        if num_outlier_entries >= 10:
-            print('Subject %s with %s Outliers'%(sub_id, num_outlier_entries ))
+        percentage_outlier_entries = num_outlier_entries * 100 / volumes_count
+        # if num_outlier_entries >= 10:
+        if percentage_outlier_entries > outliers_percentage_threshold:
+            print('Subject %s with %s Outliers has %s percent outliers'%(sub_id,\
+             num_outlier_entries,percentage_outlier_entries ))
             outliers_sub_ids.append(sub_id)
     return outliers_sub_ids
 
@@ -69,9 +77,11 @@ if __name__ == "__main__":
     'Preprocess_Datasink/qc_csv/qc.csv'
 
     motion_thresh = 2.5
-    outliers_sub_ids = motion_outliers(motion_params_npy, motion_thresh)
+    outliers_percentage_threshold = 30
+    outliers_sub_ids = motion_outliers(motion_params_npy, motion_thresh, \
+    outliers_percentage_threshold)
     print(outliers_sub_ids)
-        # print(num_outlier_entries)
+    # print(num_outlier_entries)
 
-    csf_thresh = 0.015
-    wm_thresh = 
+    # csf_thresh = 0.015
+    # wm_thresh =
