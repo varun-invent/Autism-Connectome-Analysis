@@ -76,7 +76,7 @@ def get_wf_main(name='wf_main'):
         quality_wm =  A_intersection_B_wm/A_union_B_wm
         print('quality_csf ',quality_csf)
         print('quality_wm ',quality_wm)
-
+        # A : Prior and B :Mask
         print('Anat File path ',anat_file_path)
         sub_id = anat_file_path.split('/')[-1].split('_')[0].split('-')[1]
         print('Sub ID ',sub_id)
@@ -122,8 +122,8 @@ def get_wf_main(name='wf_main'):
     wf_main.connect(inputspec, 'brain_mask_eroded',tissue_masks,'inputspec.brain_mask_eroded')
     wf_main.connect(inputspec, 'threshold',tissue_masks,'inputspec.threshold')
 
-    wf_main.connect(tissue_masks, 'outputspec.csf_mask', outputspec,'csf_mask')
-    wf_main.connect(tissue_masks, 'outputspec.wm_mask', outputspec,'wm_mask')
+    # wf_main.connect(tissue_masks, 'outputspec.csf_mask', outputspec,'csf_mask')
+    # wf_main.connect(tissue_masks, 'outputspec.wm_mask', outputspec,'wm_mask')
 
     wf_main.connect(tissue_priors, 'outputspec.csf_tissue_prior_path',qc_stats,'csf_prior')
     wf_main.connect(tissue_priors, 'outputspec.wm_tissue_prior_path',qc_stats,'wm_prior')
@@ -134,16 +134,6 @@ def get_wf_main(name='wf_main'):
     wf_main.connect(qc_stats, 'dict', outputspec, 'qc_stats_dict')
 
     return wf_main
-
-#
-# def func_qc_stats_to_csv(dict):
-    # pass
-#
-# qc_stats_to_csv = JoinNode(Function(function=func_qc_stats_to_csv, input_names=['dict'],
-#                output_names=['csv_path']),
-#                joinsource="infosource",
-#                joinfield=['in_brain'],
-#                name="save_file_list_in_brain")
 
 
 # --------------------------------------------------------------------------------------------------------------
