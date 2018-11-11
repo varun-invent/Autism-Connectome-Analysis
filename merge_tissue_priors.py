@@ -13,11 +13,15 @@ def merge(in_file_list, mask_file):
     priors_list = []
     affine = None
     header = None
-    mask = nib.load(mask_file).get_data()
+    _mask = nib.load(mask_file)
+    mask = _mask.get_data()
+    affine = _mask.affine
+    header = _mask.header
+
     for in_file in in_file_list:
         brain = nib.load(in_file)
-        affine = brain.affine
-        header = brain.header
+        # affine = brain.affine
+        # header = brain.header
         brain_data = brain.get_data().astype(np.float32)
         priors_list.append(brain_data)
 
