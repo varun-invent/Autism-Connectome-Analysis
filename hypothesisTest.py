@@ -184,11 +184,16 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
         # df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
         #                                                     & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
 
+        # DSM_IV_TR:  1: Autism, 2: Aspergers
+        # EYE_STATUS_AT_SCAN: 1: Open 2: Closed
+
+        #  Autistic Vs healthy
         criteria_dict = {'SEX' : 1,'DX_GROUP' : 2, 'EYE_STATUS_AT_SCAN' : 1}
         df_td_lt18_m= es.extract(phenotype_file_path, base_directory,criteria_dict)
 
-        criteria_dict = {'SEX' : 1,'DSM_IV_TR' : 2, 'EYE_STATUS_AT_SCAN' : 1}
+        criteria_dict = {'SEX' : 1,'DSM_IV_TR' : 1, 'EYE_STATUS_AT_SCAN' : 1}
         df_aut_lt18_m= es.extract(phenotype_file_path, base_directory,criteria_dict)
+
 
         # Age 6 - 18 Aspergers vs Healthy
 
