@@ -753,7 +753,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         # Optimized:
         voxel_matrix_optimized = brain[mask == 1]
-        voxel_matrix = voxel_matrix
+        voxel_matrix = voxel_matrix_optimized
         # print('**************Size: voxel_matrix %s voxel_matrix_optimized %s'%(voxel_matrix.shape, voxel_matrix_optimized.shape))
         # Check
         # assert((voxel_matrix == voxel_matrix_optimized).all())
@@ -805,6 +805,10 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         roi_brain_matrix = coff_matrix
         brain_file = in_file
+
+        # print('coff_matrix',coff_matrix)
+        # print('MAXXXXXXX', np.max(coff_matrix))
+        # assert (np.max(coff_matrix) > 0)
 
 
         x_dim, y_dim, z_dim, t_dim = brain.shape
