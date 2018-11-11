@@ -727,9 +727,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     wf_confound_masks.inputs.inputspec.threshold = 0.5
 
     wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
-    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_csf.nii.gz'
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/csf_prior_mask.nii.gz'
     wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
-    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/avg152T1_white.nii.gz'
+    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/wm_prior_mask.nii.gz'
 
 
 
