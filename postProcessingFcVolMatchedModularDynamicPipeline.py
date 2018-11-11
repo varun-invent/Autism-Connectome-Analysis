@@ -844,7 +844,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         fc_brain_file_name = fc_file_name + '.nii.gz'
         out_file_brain = opj(path,fc_brain_file_name)
 
-        brain_with_header = nib.Nifti1Image(brain_roi_tensor, affine=brain_data.affine,header = brain_data.header)
+        brain_with_header = nib.Nifti1Image(brain_roi_tensor_optimized, affine=brain_data.affine,header = brain_data.header)
         nib.save(brain_with_header,out_file_brain)
 
 
