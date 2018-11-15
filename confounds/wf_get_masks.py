@@ -1,4 +1,4 @@
-wmwmfrom nipype.interfaces.fsl import (FLIRT, FAST, ConvertXFM, ImageMaths, MultiImageMaths, ApplyMask)
+from nipype.interfaces.fsl import (FLIRT, FAST, ConvertXFM, ImageMaths, MultiImageMaths, ApplyMask)
 import nibabel as nib
 import numpy as np
 from scipy.ndimage.morphology import binary_erosion as erode
