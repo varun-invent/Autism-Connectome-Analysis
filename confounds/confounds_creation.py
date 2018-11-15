@@ -6,6 +6,7 @@ def calc_residuals(in_file, motion_file=None, csf_mask_path=None, wm_mask_path=N
     import numpy as np
     import os
     from os.path import join as opj
+
     nii = nb.load(in_file)
     data = nii.get_data().astype(np.float32)
     global_mask = (data != 0).sum(-1) != 0
@@ -171,11 +172,16 @@ def calc_residuals(in_file, motion_file=None, csf_mask_path=None, wm_mask_path=N
     img = nb.Nifti1Image(data, header=nii.get_header(),
                          affine=nii.get_affine())
 
-    subject_name = in_file
-    # .split('/')[-1].split('.')[0]
+    subject_name = in_file.split('/')[-1].split('.')[0]
+
     filename = subject_name + '_residual.nii.gz'
-    out_file_residual = os.path.join(os.getcwd(),filename )
+
+    out_file_residual = os.path.join(os.getcwd(),filename)
     img.to_filename(out_file_residual) # alt to nib.save
+
+    # img.to_filename(filename)
+
+    # out_file_residual = os.path.abspath(filename)
 
     out_file_list.append(out_file_residual)
 
