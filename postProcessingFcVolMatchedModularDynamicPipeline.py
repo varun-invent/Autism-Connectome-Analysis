@@ -78,7 +78,9 @@ from confounds import confounds_creation as _calc_residuals
 # MNI3mm_path = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample.nii')
 
 def main(paths, vols, calc_residual=0, band_pass_filtering=0, \
-smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy = 0, calc_residual_options=None):
+smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7,\
+save_npy = 0, calc_residual_options=None, OVERWRITE_POSTPROS_DIR = False
+):
     json_path=paths['json_path']
     base_directory=paths['base_directory']
     motion_correction_bet_directory=paths['motion_correction_bet_directory']
@@ -154,7 +156,7 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7, save_npy
         save_npy,\
         csf_path,\
         wm_path,\
-        calc_residual_options)
+        calc_residual_options,OVERWRITE_POSTPROS_DIR)
 
 
 
@@ -236,7 +238,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
    functional_connectivity_directory, save_npy,\
     csf_path,\
     wm_path,\
-    calc_residual_options ):
+    calc_residual_options, OVERWRITE_POSTPROS_DIR):
 
     # ## Volume correction
     # * I have already extracted 4 volumes.
@@ -331,7 +333,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
     bandpass = Node(afni.Bandpass(highpass=0.01, lowpass=0.1,
                              despike=False, no_detrend=True, notrans=True,
-                             ),name='bandpass')
+                             outputtype='NIFTI_GZ'),name='bandpass')
 
 
     # outputtype='NIFTI_GZ'
@@ -940,11 +942,16 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     comb = ''
     for a in calc_residual_options:
         comb = comb + a
+    if not OVERWRITE_POSTPROS_DIR:
+        combination = 'calc_residual' + str(int(calc_residual)) + \
+         'smoothing' + str(int(smoothing)) +\
+         'filt' + str(int(band_pass_filtering)) +\
+         'calc_residual_options' + comb
+    else:
+        combination = 'calc_residual' + str(int(calc_residual)) + \
+         'smoothing' + str(int(smoothing)) +\
+         'filt' + str(int(band_pass_filtering))
 
-    combination = 'calc_residual' + str(int(calc_residual)) + \
-     'smoothing' + str(int(smoothing)) +\
-     'filt' + str(int(band_pass_filtering)) +\
-     'calc_residual_options' + comb
 
     print("Combination: ",combination)
 

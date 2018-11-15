@@ -45,7 +45,7 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 
 
 def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0, band_pass_filtering=0, \
-    smoothing=0, num_proc = 7, calc_residual_options = None):
+    smoothing=0, num_proc = 7, calc_residual_options = None, OVERWRITE_POSTPROS_DIR = False):
     # json_path=paths[0]
     base_directory = paths['base_directory']
     motion_correction_bet_directory = paths['motion_correction_bet_directory']
@@ -379,8 +379,14 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
 
 
     # for motion_param_regression, band_pass_filtering, global_signal_regression, smoothing in itr:
+    if not OVERWRITE_POSTPROS_DIR:
+        fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
+    else:
+        combination_new = 'calc_residual' + str(int(calc_residual)) + \
+        'smoothing' + str(int(smoothing)) +\
+        'filt' + str(int(band_pass_filtering))
+        fc_file_list = opj(base_directory,fc_datasink_name,combination_new,'fc_map_brain_file_list.npy')
 
-    fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
 
     print('Reading the brain paths from: ',fc_file_list)
 #     apply_fisher = True
