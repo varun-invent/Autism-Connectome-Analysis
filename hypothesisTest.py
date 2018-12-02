@@ -14,6 +14,7 @@ import numpy as np
 import matching
 import pandas as pd
 import ttest as tt
+import extract_subjects as es
 
 
 # Now construct a function that takes a list of SUB_ID's and returns the FC Maps
@@ -43,30 +44,31 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 
 
 
-def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, \
-    smoothing=0, num_proc = 7):
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
-    functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
-    fc_datasink_name=paths[9]
-    atlasPath=paths[10]
-    brain_path=paths[11]
-    mask_path=paths[12]
-    atlas_path=paths[13]
-    tr_path=paths[14]
-    motion_params_path=paths[15]
-    func2std_mat_path=paths[16]
-    MNI3mm_path=paths[17]
-    demographics_file_path = paths[18]
-    phenotype_file_path = paths[19]
-    data_directory = paths[20]
-    hypothesis_test_dir = paths[21]
+def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0, band_pass_filtering=0, \
+    smoothing=0, num_proc = 7, calc_residual_options = None, OVERWRITE_POSTPROS_DIR = False):
+    # json_path=paths[0]
+    base_directory = paths['base_directory']
+    motion_correction_bet_directory = paths['motion_correction_bet_directory']
+    parent_wf_directory = paths['parent_wf_directory']
+    # functional_connectivity_directory=paths[4]
+    coreg_reg_directory= paths['coreg_reg_directory']
+    atlas_resize_reg_directory= paths['atlas_resize_reg_directory']
+    # subject_list = paths[7]
+    datasink_name = paths['datasink_name']
+    fc_datasink_name = paths['fc_datasink_name']
+    # atlasPath=paths[10]
+    # brain_path=paths[11]
+    # mask_path=paths[12]
+    # atlas_path=paths[13]
+    # tr_path=paths[14]
+    # motion_params_path=paths[15]
+    # func2std_mat_path=paths[16]
+    # MNI3mm_path=paths[17]
+    demographics_file_path = paths['demographics_file_path']
+    phenotype_file_path = paths['phenotype_file_path']
+    # data_directory = paths[20]
+    hypothesis_test_dir = paths['hypothesis_test_dir']
+    binarized_atlas_mask_path = paths['binarized_atlas_mask_path']
 
     #  Runall:
 
@@ -137,15 +139,17 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
 
         if demographics_file_path == None:
-            demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
+            raise Exception('Demographics file not supplied')
+            # demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
 
         if phenotype_file_path == None:
-            phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+            raise Exception('Phenotype file not supplied')
+            # phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 
 
         df_demographics = pd.read_csv(demographics_file_path)
-        df_phenotype = pd.read_csv(phenotype_file_path)
-        df_phenotype = df_phenotype.sort_values(['SUB_ID'])
+        # df_phenotype = pd.read_csv(phenotype_file_path)
+        # df_phenotype = df_phenotype.sort_values(['SUB_ID'])
 
 
 
@@ -158,15 +162,37 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
         #
 
 
+        # Kabir ko chaie------
+
+        # df_td = df_phenotype.loc[(df_phenotype['DX_GROUP'] == 2)]
+        #
+        #
+        # df_aut = df_phenotype.loc[(df_phenotype['DSM_IV_TR'] == 1)]
+        #
+        # df_aut_lt18_m = df_aut # just to make the later code work
+        # df_td_lt18_m = df_td
+
+        #  -------------------
+
 
         # Age 6 - 18 Autistic vs Healthy
 
-        df_td_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DX_GROUP'] == 2) \
-                                                            & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
+        # df_td_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DX_GROUP'] == 2) \
+        #                                                     & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
+        #
+        #
+        # df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
+        #                                                     & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
 
+        # DSM_IV_TR:  1: Autism, 2: Aspergers
+        # EYE_STATUS_AT_SCAN: 1: Open 2: Closed
 
-        df_aut_lt18_m = df_phenotype.loc[(df_phenotype['SEX'] == 1) & (df_phenotype['DSM_IV_TR'] == 1) \
-                                                            & (df_phenotype['EYE_STATUS_AT_SCAN'] == 1) ]
+        #  Autistic Vs healthy
+        criteria_dict = {'SEX' : 1,'DX_GROUP' : 2, 'EYE_STATUS_AT_SCAN' : 1}
+        df_td_lt18_m= es.extract(phenotype_file_path, base_directory,criteria_dict)
+
+        criteria_dict = {'SEX' : 1,'DSM_IV_TR' : 1, 'EYE_STATUS_AT_SCAN' : 1}
+        df_aut_lt18_m= es.extract(phenotype_file_path, base_directory,criteria_dict)
 
 
         # Age 6 - 18 Aspergers vs Healthy
@@ -230,6 +256,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
             # # TR matching
             print('TR Matching with range (0,2.5]')
 
+            # TODO Ask user which site needs to be dropped if any
             df_demographics = df_demographics.drop(df_demographics.index[[7]]) # Deleting OHSU with volumes 82
 
             TR_bins = np.array([[0,2.5]])
@@ -238,7 +265,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
             # matched_df_TD = df_phenotype
             # matched_df_AUT = df_phenotype
-            df_td_lt18_m, df_aut_lt18_m = matching.tr_matching(TR_bins,df_demographics, df_td_lt18_m, df_aut_lt18_m)
+            df_td_lt18_m, df_aut_lt18_m = matching.tr_matching(TR_bins,df_demographics, df_td_lt18_m, df_aut_lt18_m, base_directory)
 
 
             # Age Matching
@@ -246,13 +273,13 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
             age_bins = np.array([[0,9],[9,12],[12,15],[15,18]])
             # matched_df_TD = df_phenotype
             # matched_df_AUT = df_phenotype
-            df_td_lt18_m, df_aut_lt18_m = matching.age_matching(age_bins, df_td_lt18_m, df_aut_lt18_m)
+            df_td_lt18_m, df_aut_lt18_m = matching.age_matching(age_bins, df_td_lt18_m, df_aut_lt18_m, base_directory)
 
-            df_aut = df_aut_lt18_m
-            df_td = df_td_lt18_m
+        df_aut = df_aut_lt18_m
+        df_td = df_td_lt18_m
 
-            df_aut_subid = df_aut.as_matrix(columns=['SUB_ID'])
-            df_td_subid = df_td.as_matrix(columns=['SUB_ID'])
+        df_aut_subid = df_aut.as_matrix(columns=['SUB_ID'])
+        df_td_subid = df_td.as_matrix(columns=['SUB_ID'])
 
 
 
@@ -279,7 +306,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
         # df_td_subid = df_td_lt18_m.as_matrix(columns=['SUB_ID'])
         #
         #
-        # combination = 'motionRegress' + str(int(motion_param_regression)) + 'filt' + \
+        # combination = 'calc_residual' + str(int(motion_param_regression)) + 'filt' + \
         #           str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
         #           'smoothing' + str(int(smoothing))
         #
@@ -320,13 +347,17 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
     # import pdb; pdb.set_trace()
 
+    comb = ''
+    for a in calc_residual_options:
+        comb = comb + a
 
-    combination = 'motionRegress' + str(int(motion_param_regression)) + \
-     'global' + str(int(global_signal_regression)) + 'smoothing' + str(int(smoothing)) +\
-     'filt' + str(int(band_pass_filtering))
+    combination = 'calc_residual' + str(int(calc_residual)) + \
+    'smoothing' + str(int(smoothing)) +\
+    'filt' + str(int(band_pass_filtering)) +\
+    'calc_residual_options' + comb
 
     print("Combination: ",combination)
-    print(motion_param_regression,band_pass_filtering, global_signal_regression, smoothing)
+    print(calc_residual,band_pass_filtering, smoothing)
 
     save_destination = opj(hypothesis_test_dir,combination)
     print('Saving files in ',save_destination)
@@ -337,10 +368,10 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     save_destination_AUT = opj(hypothesis_test_dir,combination,'AUT_subjects.csv')
 
     print("Storing the subjects' information used")
-    # df_td_lt18_m.to_csv('TD_subects.csv')
+
     df_td.to_csv(save_destination_TD)
     print('Saved TD_subects.csv')
-    # df_aut_lt18_m.to_csv('AUT_subjects.csv')
+
     df_aut.to_csv(save_destination_AUT)
     print('Saved AUT_subects.csv')
 
@@ -348,8 +379,14 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
 
 
     # for motion_param_regression, band_pass_filtering, global_signal_regression, smoothing in itr:
+    if not OVERWRITE_POSTPROS_DIR:
+        fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
+    else:
+        combination_new = 'calc_residual' + str(int(calc_residual)) + \
+        'smoothing' + str(int(smoothing)) +\
+        'filt' + str(int(band_pass_filtering))
+        fc_file_list = opj(base_directory,fc_datasink_name,combination_new,'fc_map_brain_file_list.npy')
 
-    fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
 
     print('Reading the brain paths from: ',fc_file_list)
 #     apply_fisher = True
@@ -370,10 +407,17 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, motion_param_reg
     autistic_list = autistic_list#[0:participants_considered]
     td_list = td_list#[0:participants_considered]
 
+    save_destination_TD = opj(hypothesis_test_dir,combination,'TD_subects_filepath.txt')
+    save_destination_AUT = opj(hypothesis_test_dir,combination,'AUT_subjects_filepath.txt')
+
+    np.savetxt(save_destination_TD,td_list,delimiter='/n', fmt='%s')
+    np.savetxt(save_destination_AUT,autistic_list,delimiter='/n', fmt='%s')
+
+
+
     # Created the below mask manually using BET
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample_mask.nii.gz')
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'atlas_resize_reg_directory/resample_atlas/fullbrain_atlas_thr0-2mm_resample_binarize.nii.gz')
-    mask = '/home1/varunk/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz'
-
+    mask = binarized_atlas_mask_path
     # print('Saving the results in ', hypothesis_test_dir)
     tt.main(autistic_list,td_list, combination, mask, applyFisher, hypothesis_test_dir) # sends the file path of autistic and TD and processing params

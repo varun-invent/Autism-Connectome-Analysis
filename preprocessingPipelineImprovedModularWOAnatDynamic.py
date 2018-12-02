@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # ### Preprocessing Pipeline
@@ -26,6 +25,8 @@ from os.path import join as opj
 from nipype.interfaces import afni
 import nibabel as nib
 import json
+from confounds import wf_main_for_masks as wfm
+from confounds import wf_tissue_priors as wftp
 
 
 # import logging
@@ -81,19 +82,19 @@ import json
 # subject_list = (layout.get_subjects())[0:number_of_subjects]
 
 
-def main(paths, options_binary_string, ANAT , num_proc = 7):
+def main(paths, options_binary_string, ANAT , DO_FAST=False, num_proc = 7):
 
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
+    json_path=paths['json_path']
+    base_directory=paths['base_directory']
+    motion_correction_bet_directory=paths['motion_correction_bet_directory']
+    parent_wf_directory=paths['parent_wf_directory']
     # functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
+    coreg_reg_directory=paths['coreg_reg_directory']
+    atlas_resize_reg_directory=paths['atlas_resize_reg_directory']
+    subject_list = paths['subject_list']
+    datasink_name=paths['datasink_name']
     # fc_datasink_name=paths[9]
-    atlasPath=paths[10]
+    atlasPath=paths['atlasPath']
     # brain_path=paths[11]
     # mask_path=paths[12]
     # atlas_path=paths[13]
@@ -103,12 +104,21 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     # MNI3mm_path=paths[17]
     # demographics_file_path = paths[18]
     # phenotype_file_path = paths[19]
-    data_directory = paths[20]
+    data_directory = paths['data_directory']
 
 
 
     number_of_subjects = len(subject_list)
     print("Working with ",number_of_subjects," subjects.")
+
+    # Options:
+    # discard 4 Volumes (extract), slicetimer, mcflirt
+    print('Preprocessing Options:')
+    print('Skipping 4 dummy volumes - ',options_binary_string[0])
+    print('Slicetiming correction - ',options_binary_string[1])
+    print('Finding Motion Outliers - ',options_binary_string[2])
+    print('Doing Motion Correction - ',options_binary_string[3])
+    motionOutliersOption = options_binary_string[2]
 
     # Create our own custom function - BIDSDataGrabber using a Function Interface.
 
@@ -119,14 +129,28 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     #     Remember that all the necesary imports need to be INSIDE the function for the Function Interface to work!
         from bids.grabbids import BIDSLayout
 
-        layout = BIDSLayout(data_dir)
+        layout = BIDSLayout(data_dir) # TODO takes lot of time to execute. Move it out in the next version
+        # DEBUG Tried moving out. gave deep copy error..
         run = 1
 
-        anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', extensions=['nii', 'nii.gz'])]
-        func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+        session = 1
+
+        if session != 0:
+            anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', session = session, run=run, extensions=['nii', 'nii.gz'])]
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session, run=run, extensions=['nii', 'nii.gz'])]
+
+        else:
+            anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w' , extensions=['nii', 'nii.gz'])]
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+
+
+        if len(func_file_path)  == 0:
+            print('Error with subject ID %s' % subject_id )
+            raise Exception('No Functional File with subject ID %s' % subject_id)
 
         if len(anat_file_path) == 0:
             return None, func_file_path[0] # No Anatomical files present
+
         return anat_file_path[0],func_file_path[0]
 
 
@@ -138,48 +162,67 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     # ## Return TR
 
-    def get_TR(in_file):
-        from bids.grabbids import BIDSLayout
-
-        data_directory = '/home1/varunk/data/ABIDE1/RawDataBIDs'
-        layout = BIDSLayout(data_directory)
-        metadata = layout.get_metadata(path=in_file)
-        TR  = metadata['RepetitionTime']
-        return TR
+    # def get_TR(in_file):
+    #     from bids.grabbids import BIDSLayout
+    #     import json
+    #
+    #     json_path = 'scripts/json/paths.json'
+    #
+    #     with open(json_path, 'rt') as fp:
+    #         task_info = json.load(fp)
+    #     data_directory = task_info["data_directory"]
+    #
+    #
+    #     # data_directory = '/home1/shared/ABIDE_1/UM_1'
+    #     layout = BIDSLayout(data_directory)
+    #     metadata = layout.get_metadata(path=in_file)
+    #     TR  = metadata['RepetitionTime']
+    #     return TR
 
 
     # ---------------- Added new Node to return TR and other slice timing correction params-------------------------------
-    def _getMetadata(in_file):
+    def _getMetadata(in_file, data_directory):
         from bids.grabbids import BIDSLayout
-        import logging
+        import json
 
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
+        # json_path = 'scripts/json/paths.json'
+        #
+        # with open(json_path, 'rt') as fp:
+        #     task_info = json.load(fp)
+        # data_directory = task_info["data_directory"]
 
-        # create a file handler
-        handler = logging.FileHandler('progress.log')
 
-        # add the handlers to the logger
-        logger.addHandler(handler)
+
+        # import logging
+        #
+        # logger = logging.getLogger(__name__)
+        # logger.setLevel(logging.DEBUG)
+        #
+        # # create a file handler
+        # handler = logging.FileHandler('progress.log')
+        #
+        # # add the handlers to the logger
+        # logger.addHandler(handler)
+
+
+
 
         interleaved = True
         index_dir = False
-        data_directory = '/home1/varunk/data/ABIDE1/RawDataBIDs'
+        # data_directory = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+        # data_directory = '/home1/shared/ABIDE_1/UM_1'
         layout = BIDSLayout(data_directory)
         metadata = layout.get_metadata(path=in_file)
         print(metadata)
 
-        logger.info('Extracting Meta Data of file: %s',in_file)
         try: tr  = metadata['RepetitionTime']
         except KeyError:
             print('Key RepetitionTime not found in task-rest_bold.json so using a default of 2.0 ')
             tr = 2
-            logger.error('Key RepetitionTime not found in task-rest_bold.json for file %s so using a default of 2.0 ', in_file)
 
         try: slice_order = metadata['SliceAcquisitionOrder']
         except KeyError:
             print('Key SliceAcquisitionOrder not found in task-rest_bold.json so using a default of interleaved ascending ')
-            logger.error('Key SliceAcquisitionOrder not found in task-rest_bold.json for file %s so using a default of interleaved ascending', in_file)
             return tr, index_dir, interleaved
 
 
@@ -191,8 +234,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         return tr, index_dir, interleaved
 
 
-    getMetadata = Node(Function(function=_getMetadata, input_names=['in_file'],
+    getMetadata = Node(Function(function=_getMetadata, input_names=['in_file','data_directory'],
                                     output_names=['tr','index_dir','interleaved']), name='getMetadata')
+    getMetadata.inputs.data_directory = data_directory
 
     # ### Skipping 4 starting scans
     # Extract ROI for skipping first 4 scans of the functional data
@@ -307,7 +351,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                                                    op_string='-mas'),
                           name='maskfunc')
 
-    # Does BET (masking) on the mean func scan
+    # Does BET (masking) on the mean func scan and outputting the mask as well as masked mean functional image
     maskfunc4mean = Node(interface=ImageMaths(suffix='_bet',
                                                    op_string='-mas'),
                           name='maskfunc4mean')
@@ -326,8 +370,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     substitutions = [('_subject_id_', 'sub-'),
                      ('_resample_brain_flirt.nii_brain', ''),
                      ('_roi_st_mcf_flirt.nii_brain_flirt', ''),
-                     ('task-rest_run-1_bold_roi_st_mcf.nii','motion_params'),
-                     ('T1w_resample_brain_flirt_sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt','fun2std')
+                     ('task-rest_run-1_bold_roi_st_mcf.nii','motion_params')
+                     # ('T1w_resample_brain_flirt_sub-0050002_task-rest_run-1_bold_roi_st_mcf_mean_bet_flirt','fun2std')
                     ]
 
     # Feed the substitution strings to the DataSink node
@@ -455,9 +499,6 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                              despike=False, no_detrend=True, notrans=True,
                              outputtype='NIFTI_GZ'),name='bandpass')
 
-    # ### Following is a Join Node that collects the preprocessed file paths and saves them in a file
-
-    # In[902]:
 
 
     def save_file_list_function_in_brain(in_brain):
@@ -471,7 +512,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         np.save('brain_file_list',file_list)
         file_name = 'brain_file_list.npy'
-        out_brain = opj(os.getcwd(),file_name) # path
+        # out_brain = opj(os.getcwd(),file_name) # path
+        out_brain = os.path.abspath(file_name)
         return out_brain
 
     def save_file_list_function_in_mask(in_mask):
@@ -484,7 +526,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('mask_file_list',file_list2)
           file_name2 = 'mask_file_list.npy'
-          out_mask = opj(os.getcwd(),file_name2) # path
+          # out_mask = opj(os.getcwd(),file_name2) # path
+          out_mask = os.path.abspath(file_name2)
           return out_mask
 
     def save_file_list_function_in_motion_params(in_motion_params):
@@ -497,7 +540,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('motion_params_file_list',file_list3)
           file_name3 = 'motion_params_file_list.npy'
-          out_motion_params = opj(os.getcwd(),file_name3) # path
+          # out_motion_params = opj(os.getcwd(),file_name3) # path
+          out_motion_params = os.path.abspath(file_name3)
           return out_motion_params
 
     def save_file_list_function_in_motion_outliers(in_motion_outliers):
@@ -510,7 +554,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('motion_outliers_file_list',file_list4)
           file_name4 = 'motion_outliers_file_list.npy'
-          out_motion_outliers = opj(os.getcwd(),file_name4) # path
+          # out_motion_outliers = opj(os.getcwd(),file_name4) # path
+          out_motion_outliers = os.path.abspath(file_name4)
           return out_motion_outliers
 
     def save_file_list_function_in_joint_xformation_matrix(in_joint_xformation_matrix):
@@ -523,7 +568,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('joint_xformation_matrix_file_list',file_list5)
           file_name5 = 'joint_xformation_matrix_file_list.npy'
-          out_joint_xformation_matrix = opj(os.getcwd(),file_name5) # path
+          # out_joint_xformation_matrix = opj(os.getcwd(),file_name5) # path
+          out_joint_xformation_matrix = os.path.abspath(file_name5)
           return out_joint_xformation_matrix
 
     def save_file_list_function_in_tr(in_tr):
@@ -536,7 +582,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('tr_list',tr_list)
           file_name6 = 'tr_list.npy'
-          out_tr = opj(os.getcwd(),file_name6) # path
+          # out_tr = opj(os.getcwd(),file_name6) # path
+          out_tr = os.path.abspath(file_name6)
           return out_tr
 
     def save_file_list_function_in_atlas(in_atlas):
@@ -549,8 +596,55 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
           np.save('atlas_file_list',file_list7)
           file_name7 = 'atlas_file_list.npy'
-          out_atlas = opj(os.getcwd(),file_name7) # path
+          # out_atlas = opj(os.getcwd(),file_name7) # path
+          out_atlas = os.path.abspath(file_name7)
           return out_atlas
+
+    def save_file_list_function_in_confound_masks(in_csf_mask, in_wm_mask):
+        import numpy as np
+        import os
+        from os.path import join as opj
+
+
+        file_list8 = np.asarray(in_csf_mask)
+        print('######################## File List ######################: \n',file_list8)
+        np.save('csf_mask_file_list',file_list8)
+        file_name8 = 'csf_mask_file_list.npy'
+        # out_csf_mask = opj(os.getcwd(),file_name8) # path
+        out_csf_mask = os.path.abspath(file_name8)
+
+
+        file_list9 = np.asarray(in_wm_mask)
+        print('######################## File List ######################: \n',file_list9)
+        np.save('wm_mask_file_list',file_list9)
+        file_name9 = 'wm_mask_file_list.npy'
+        # out_wm_mask = opj(os.getcwd(),file_name9) # path
+        out_wm_mask = os.path.abspath(file_name9)
+
+        return out_csf_mask, out_wm_mask
+
+    def func_create_qc_csv(in_dict):
+        import pandas as pd
+        import os
+        from os.path import join as opj
+        import numpy as np
+
+        df = pd.DataFrame()
+
+        dict_list = np.asarray(in_dict)
+        for dict in dict_list:
+            _df = pd.DataFrame(dict)
+            df = df.append(_df)
+
+        print('########## DataFrame ########',df)
+        file_name = 'qc.csv'
+
+        df.to_csv(file_name,index=False)
+
+        # qc_csv = opj(os.getcwd(),file_name) # path
+        qc_csv = os.path.abspath(file_name)
+        return qc_csv
+
 
 
     save_file_list_in_brain = JoinNode(Function(function=save_file_list_function_in_brain, input_names=['in_brain'],
@@ -602,92 +696,20 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                name="save_file_list_in_atlas")
 
 
-    # save_file_list = JoinNode(Function(function=save_file_list_function, input_names=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix', 'in_tr', 'in_atlas'],
-    #                output_names=['out_brain','out_mask','out_motion_params','out_motion_outliers','out_joint_xformation_matrix','out_tr', 'out_atlas']),
-    #                joinsource="infosource",
-    #                joinfield=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix','in_tr', 'in_atlas'],
-    #                name="save_file_list")
+    save_file_list_in_confound_masks = JoinNode(Function(function=save_file_list_function_in_confound_masks, input_names=['in_csf_mask', 'in_wm_mask'],
+               output_names=['out_csf_mask', 'out_wm_mask']),
+               joinsource="infosource",
+               joinfield=['in_csf_mask', 'in_wm_mask'],
+               name="save_file_list_in_confound_masks")
+
+    save_qc_csv = JoinNode(Function(function=func_create_qc_csv, input_names=['in_dict'],
+                output_names=['qc_csv']),
+                joinsource="infosource",
+                joinfield=['in_dict'],
+                name="save_qc_csv")
 
 
 
-
-
-
-
-
-    # def save_file_list_function(in_brain, in_mask, in_motion_params, in_motion_outliers, in_joint_xformation_matrix, in_tr, in_atlas):
-    #     # Imports
-    #     import numpy as np
-    #     import os
-    #     from os.path import join as opj
-    #
-    #
-    #     file_list = np.asarray(in_brain)
-    #     print('######################## File List ######################: \n',file_list)
-    #
-    #     np.save('brain_file_list',file_list)
-    #     file_name = 'brain_file_list.npy'
-    #     out_brain = opj(os.getcwd(),file_name) # path
-    #
-    #
-    #     file_list2 = np.asarray(in_mask)
-    #     print('######################## File List ######################: \n',file_list2)
-    #
-    #     np.save('mask_file_list',file_list2)
-    #     file_name2 = 'mask_file_list.npy'
-    #     out_mask = opj(os.getcwd(),file_name2) # path
-    #
-    #
-    #     file_list3 = np.asarray(in_motion_params)
-    #     print('######################## File List ######################: \n',file_list3)
-    #
-    #     np.save('motion_params_file_list',file_list3)
-    #     file_name3 = 'motion_params_file_list.npy'
-    #     out_motion_params = opj(os.getcwd(),file_name3) # path
-    #
-    #
-    #     file_list4 = np.asarray(in_motion_outliers)
-    #     print('######################## File List ######################: \n',file_list4)
-    #
-    #     np.save('motion_outliers_file_list',file_list4)
-    #     file_name4 = 'motion_outliers_file_list.npy'
-    #     out_motion_outliers = opj(os.getcwd(),file_name4) # path
-    #
-    #
-    #     file_list5 = np.asarray(in_joint_xformation_matrix)
-    #     print('######################## File List ######################: \n',file_list5)
-    #
-    #     np.save('joint_xformation_matrix_file_list',file_list5)
-    #     file_name5 = 'joint_xformation_matrix_file_list.npy'
-    #     out_joint_xformation_matrix = opj(os.getcwd(),file_name5) # path
-    #
-    #     tr_list = np.asarray(in_tr)
-    #     print('######################## TR List ######################: \n',tr_list)
-    #
-    #     np.save('tr_list',tr_list)
-    #     file_name6 = 'tr_list.npy'
-    #     out_tr = opj(os.getcwd(),file_name6) # path
-    #
-    #
-    #     file_list7 = np.asarray(in_atlas)
-    #     print('######################## File List ######################: \n',file_list7)
-    #
-    #     np.save('atlas_file_list',file_list7)
-    #     file_name7 = 'atlas_file_list.npy'
-    #     out_atlas = opj(os.getcwd(),file_name7) # path
-    #
-    #
-    #
-    #
-    #     return out_brain, out_mask, out_motion_params, out_motion_outliers, out_joint_xformation_matrix, out_tr , out_atlas
-    #
-    #
-    #
-    # save_file_list = JoinNode(Function(function=save_file_list_function, input_names=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix', 'in_tr', 'in_atlas'],
-    #                  output_names=['out_brain','out_mask','out_motion_params','out_motion_outliers','out_joint_xformation_matrix','out_tr', 'out_atlas']),
-    #                  joinsource="infosource",
-    #                  joinfield=['in_brain', 'in_mask', 'in_motion_params','in_motion_outliers','in_joint_xformation_matrix','in_tr', 'in_atlas'],
-    #                  name="save_file_list")
 
 
     # ### Motion outliers
@@ -696,41 +718,122 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     motionOutliers = Node(MotionOutliers(no_motion_correction=False,metric='fd', out_metric_plot = 'fd_plot.png',
                                          out_metric_values='fd_raw.txt'),name='motionOutliers')
 
+
+# -------------------------FAST -----------------------------------------------------------------------------------------------------
+    if DO_FAST:
+        wf_confound_masks = wfm.get_wf_main(name='wf_main_masks')
+
+        wf_confound_masks.inputs.inputspec.brain_mask_eroded = \
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
+
+        wf_confound_masks.inputs.inputspec.threshold = 0.5
+
+        wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/csf_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/wm_prior_mask.nii.gz'
+
+
+# ----------------------------No FAST -----------------------------------------------------------
+# TODO
+    if not DO_FAST:
+        wf_confound_masks = wftp.get_wf_tissue_priors(name='get_wf_tissue_priors')
+        wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/csf_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/wm_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.threshold = 0.5
+
+        # wf_confound_masks.inputs.inputspec.reference_func_file_path =
+        # wf_confound_masks.inputs.inputspec.std2func_mat_path =
+
+
+
+
     # ## Workflow for atlas registration  from std to functional
 
     wf_atlas_resize_reg = Workflow(name=atlas_resize_reg_directory)
 
-    wf_atlas_resize_reg.connect([
+    wf_coreg_reg_to_wf_confound_masks = Node(IdentityInterface(fields=['reference_func_file_path', 'resampled_anat_file_path', 'func2anat_mat_path']),
+                          name="wf_coreg_reg_to_wf_confound_masks")
 
-                # Apply the inverse matrix to the 3mm Atlas to transform it to func space
+    # Apply the inverse matrix to the 3mm Atlas to transform it to func space
 
-                (maskfunc4mean, std2func_xform, [(('out_file','reference'))]),
+    wf_atlas_resize_reg.connect(maskfunc4mean, 'out_file', std2func_xform, 'reference')
 
-                (resample_atlas, std2func_xform, [('out_file','in_file')] ),
+    wf_atlas_resize_reg.connect(resample_atlas, 'out_file', std2func_xform,'in_file')
 
-                # Now, applying the inverse matrix
+    # Now, applying the inverse matrix
 
-                (inv_mat, std2func_xform, [('out_file','in_matrix_file')]), # output: Atlas in func space
+    wf_atlas_resize_reg.connect(inv_mat, 'out_file', std2func_xform ,'in_matrix_file') # output: Atlas in func space
 
-                (std2func_xform, save_file_list_in_atlas, [('out_file','in_atlas')]),
-
-                # ---------------------------Save the required files --------------------------------------------
-
-                (save_file_list_in_motion_params, dataSink, [('out_motion_params','motion_params_paths.@out_motion_params')]),
-                (save_file_list_in_motion_outliers, dataSink, [('out_motion_outliers','motion_outliers_paths.@out_motion_outliers')]),
-                (save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')]),
-                (save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')]),
-
-                (save_file_list_in_joint_xformation_matrix, dataSink, [('out_joint_xformation_matrix',
-                                             'joint_xformation_matrix_paths.@out_joint_xformation_matrix')]),
-
-                (save_file_list_in_tr, dataSink, [('out_tr','tr_paths.@out_tr')]),
-
-                (save_file_list_in_atlas, dataSink, [('out_atlas','atlas_paths.@out_atlas')])
+    wf_atlas_resize_reg.connect(std2func_xform, 'out_file', save_file_list_in_atlas,'in_atlas')
 
 
 
-    ])
+    wf_atlas_resize_reg.connect(inv_mat, 'out_file', wf_confound_masks, 'inputspec.std2func_mat_path')
+
+    #  Sending to wf_confound_masks
+    wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'reference_func_file_path', wf_confound_masks, 'inputspec.reference_func_file_path')
+
+    if DO_FAST:
+        wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'resampled_anat_file_path', wf_confound_masks, 'inputspec.resampled_anat_file_path')
+        wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'func2anat_mat_path', wf_confound_masks, 'inputspec.func2anat_mat_path')
+        #  Creating and saving the QC CSV
+        wf_atlas_resize_reg.connect(wf_confound_masks,'outputspec.qc_stats_dict', save_qc_csv, 'in_dict')
+        wf_atlas_resize_reg.connect(save_qc_csv, 'qc_csv', dataSink, 'qc_csv.@qc_csv')
+
+
+    #  Getting the outputs from wf_confound_masks workflow
+
+    wf_atlas_resize_reg.connect(wf_confound_masks, 'outputspec.csf_tissue_prior_path',
+                                            save_file_list_in_confound_masks, 'in_csf_mask' )
+    wf_atlas_resize_reg.connect(wf_confound_masks, 'outputspec.wm_tissue_prior_path',
+                                            save_file_list_in_confound_masks, 'in_wm_mask' )
+
+    wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_csf_mask', dataSink, 'csf_mask_paths.@out_csf_tissue_prior_mask')
+    wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_wm_mask', dataSink, 'wm_mask_paths.@out_wm_tissue_prior_mask')
+
+
+
+
+    # ---------------------------Save the required files --------------------------------------------
+
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_motion_params, dataSink, [('out_motion_params','motion_params_paths.@out_motion_params')])])
+
+    # if motionOutliersOption == 1:
+        # wf_atlas_resize_reg.connect([(save_file_list_in_motion_outliers, dataSink, [('out_motion_outliers','motion_outliers_paths.@out_motion_outliers')])])
+
+    # Move the below statements to the respective workflows
+
+    # Lesson learnt: A node inside a workflow (let's say WF_1) is not a global entity. That is, to direct output of that node to a datasink (which is a global entity), the .connect() should
+      # be written in that workflow only and will not work .connect() is written in some other workflow.
+    """
+    Lesson learnt: (Specific to nested workflows)
+    A node (let's say N_1) inside a workflow (let's say WF_1) is
+    not a global entity. That is, to direct the output of that node (N_1) to
+    a datasink (which is a global entity), the
+    .connect(N_1, 'Output' ,DataSink, 'Input') should be written in that
+    workflow only, i.e. WF_1.connect(N_1, 'Output' ,DataSink, 'Input').
+    And will not work if .connect(N_1,_,_,_) is written in some other
+    workflow. I was writing all the datasink .connect() statements in a
+    different workflow that was nested in WF_1.
+    """
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain')])])
+    # wf_atlas_resize_reg.connect([(save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')])])
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_joint_xformation_matrix, dataSink, [('out_joint_xformation_matrix',
+    #                              'joint_xformation_matrix_paths.@out_joint_xformation_matrix')])])
+
+    # wf_atlas_resize_reg.connect([(save_file_list_in_tr, dataSink, [('out_tr','tr_paths.@out_tr')])])
+
+    wf_atlas_resize_reg.connect([(save_file_list_in_atlas, dataSink, [('out_atlas','atlas_paths.@out_atlas')])])
+
+
+
+
 
 
     # In[909]:
@@ -740,6 +843,8 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
     # wf_coreg_reg.base_dir = base_directory
     # Dir where all the outputs will be stored(inside coregistrationPipeline folder).
 
+    wf_motion_correction_bet_to_wf_confound_masks = Node(IdentityInterface(fields=['reference_func_file_path']),
+                          name="wf_motion_correction_bet_to_wf_confound_masks")
 
 
     if ANAT == 1:
@@ -777,7 +882,15 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
         # Now inverse the func2std MAT to std2func
         wf_coreg_reg.connect(concat_xform, 'out_file', wf_atlas_resize_reg,'inv_mat.in_file')
-# ------------------------------------------------------------------------------------------------------------------------------
+
+        #  For the extraction of the confound masks
+        wf_coreg_reg.connect(resample_anat, 'out_file', wf_coreg_reg_to_wf_confound_masks, 'resampled_anat_file_path')
+        wf_coreg_reg.connect(func2anat_reg, 'out_matrix_file', wf_coreg_reg_to_wf_confound_masks, 'func2anat_mat_path')
+        wf_coreg_reg.connect(wf_motion_correction_bet_to_wf_confound_masks, 'reference_func_file_path', wf_coreg_reg_to_wf_confound_masks, 'reference_func_file_path')
+
+
+
+
 
     # Registration of Functional to MNI 3mm space w/o using anatomical
     if ANAT == 0:
@@ -793,7 +906,9 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         wf_coreg_reg.connect(func2anat_reg, 'out_matrix_file', wf_atlas_resize_reg,'inv_mat.in_file')
 
 
-
+    wf_coreg_reg.connect(
+    save_file_list_in_joint_xformation_matrix, 'out_joint_xformation_matrix',
+    dataSink, 'joint_xformation_matrix_paths.@out_joint_xformation_matrix')
 
 
 
@@ -835,7 +950,22 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
 
 
-                (maskfunc4mean, wf_coreg_reg, [('out_file','func2anat_reg.in_file')])
+                (save_file_list_in_brain, dataSink, [('out_brain','preprocessed_brain_paths.@out_brain1')]),
+                (save_file_list_in_mask, dataSink, [('out_mask','preprocessed_mask_paths.@out_mask')]),
+
+
+
+                (maskfunc4mean, wf_coreg_reg, [('out_file','func2anat_reg.in_file')]),
+                (applyMask, wf_coreg_reg, [('out_file', 'wf_motion_correction_bet_to_wf_confound_masks.reference_func_file_path')])
+
+
+                # -----------------------------------------------------------
+                #   Connect maskfunc4mean node to FSL:FAST
+                #   and extract the GM, WM and CSF masks.
+                #  maskfunc4mean.out_brain is the scull stripped mean functional file of a subject in
+                #   in the subject space after the fMRI file has been volume corrected or coregistered by mcflirt.
+                #   Then save the masks and then save the file lists as well.
+                # -----------------------------------------------------------
 
 
 
@@ -890,19 +1020,14 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
 
 
-    # Options:
-    # discard 4 Volumes (extract), slicetimer, mcflirt
-    print('Preprocessing Options:')
-    print('Skipping 4 dummy volumes - ',options_binary_string[0])
-    print('Slicetiming correction - ',options_binary_string[1])
-    print('Finding Motion Outliers - ',options_binary_string[2])
-    print('Doing Motion Correction - ',options_binary_string[3])
+
 
     # ANAT = 0
     nodes = [extract, slicetimer,motionOutliers, mcflirt]
     wf.connect(infosource,'subject_id', BIDSDataGrabber,'subject_id')
     wf.connect(BIDSDataGrabber, 'func_file_path', getMetadata, 'in_file')
     wf.connect(getMetadata, 'tr', save_file_list_in_tr,'in_tr')
+    wf.connect(save_file_list_in_tr,'out_tr', dataSink,'tr_paths.@out_tr')
 
     old_node = BIDSDataGrabber
     old_node_output = 'func_file_path'
@@ -937,22 +1062,38 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
                 new_node_input = 'in_file'
                 wf.connect(mcflirt,'par_file',dataSink,'motion_params.@par_file') # saves the motion parameters calculated before
 
-                wf.connect(mcflirt,'par_file',save_file_list_in_motion_params,'in_motion_params')
+                wf.connect(mcflirt,'par_file',
+                save_file_list_in_motion_params, 'in_motion_params')
 
-                wf.connect(mcflirt, 'out_file', wf_motion_correction_bet,'from_mcflirt.in_file')
+                wf.connect(save_file_list_in_motion_params, 'out_motion_params',
+                dataSink, 'motion_params_paths.@out_motion_params')
+
+                wf.connect(mcflirt, 'out_file',
+                wf_motion_correction_bet, 'from_mcflirt.in_file')
+
+
 
 
             elif new_node == motionOutliers:
 
-                wf.connect(meanfuncmask, 'mask_file', motionOutliers,'mask')
+                wf.connect(meanfuncmask, 'mask_file',
+                motionOutliers,'mask')
 
-                wf.connect(motionOutliers, 'out_file', dataSink,'motionOutliers.@out_file')
+                wf.connect(motionOutliers, 'out_file',
+                dataSink,'motionOutliers.@out_file')
 
-                wf.connect(motionOutliers, 'out_metric_plot', dataSink,'motionOutliers.@out_metric_plot')
+                wf.connect(motionOutliers, 'out_metric_plot',
+                dataSink,'motionOutliers.@out_metric_plot')
 
-                wf.connect(motionOutliers, 'out_metric_values', dataSink,'motionOutliers.@out_metric_values')
+                wf.connect(motionOutliers, 'out_metric_values',
+                dataSink,'motionOutliers.@out_metric_values')
 
-                wf.connect(motionOutliers, 'out_file', save_file_list_in_motion_outliers,'in_motion_outliers')
+                wf.connect(motionOutliers, 'out_file',
+                save_file_list_in_motion_outliers,'in_motion_outliers')
+
+                wf.connect(
+                save_file_list_in_motion_outliers, 'out_motion_outliers',
+                dataSink, 'motion_outliers_paths.@out_motion_outliers')
 
                 new_node_input = 'in_file'
 
@@ -968,13 +1109,14 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
             old_node = new_node
 
         else:
-            if idx == 3:
+            if idx == 3: # If No Node is attached till the end
                 # new_node = from_mcflirt
                 # new_node_input = 'from_mcflirt.in_file'
 
                 wf.connect(old_node, old_node_output, wf_motion_correction_bet,'from_mcflirt.in_file')
 
                 # old_node = new_node
+
 
 
 

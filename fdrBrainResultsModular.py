@@ -288,14 +288,16 @@ def fdr_correction_and_viz(Pvals_path, Tvals_path, C1_path, C2_path, mask_path, 
 
 
 def _main(params):
+    combination, base_directory, hypothesis_test_dir, header, mask_path, affine, fdr_results_dir = params
+    #
+    # motion_param_regression, band_pass_filtering, global_signal_regression,
+    #  smoothing, base_directory, hypothesis_test_dir, header, mask_path, affine,fdr_results_dir = params
 
-    motion_param_regression, band_pass_filtering, global_signal_regression, smoothing, base_directory, hypothesis_test_dir, header, mask_path, affine,fdr_results_dir = params
 
-
-    combination = 'motionRegress' + str(int(motion_param_regression)) +\
-                  'global' + str(int(global_signal_regression)) + \
-                  'smoothing' + str(int(smoothing)) +\
-                  'filt' + str(int(band_pass_filtering))
+    # combination = 'motionRegress' + str(int(motion_param_regression)) +\
+    #               'global' + str(int(global_signal_regression)) + \
+    #               'smoothing' + str(int(smoothing)) +\
+    #               'filt' + str(int(band_pass_filtering))
 
     if fdr_results_dir == None:
         fdr_results_dir = 'fdr_and_results_modular'
@@ -312,45 +314,47 @@ def _main(params):
     #       str(int(band_pass_filtering)) + 'global' + str(int(global_signal_regression)) + \
     #       'smoothing' + str(int(smoothing))
     print("Combination: ",combination)
-    print(motion_param_regression, band_pass_filtering, global_signal_regression,smoothing)
+    # print(motion_param_regression, band_pass_filtering, global_signal_regression,smoothing)
     Pvals_path = opj(hypothesis_test_dir,combination,'Pvals.npy')
     Tvals_path = opj(hypothesis_test_dir,combination,'Tvals.npy')
     C1_path = opj(hypothesis_test_dir,combination,'meanC1.npy')
     C2_path = opj(hypothesis_test_dir,combination,'meanC2.npy')
 
 
-    fdr_correction_and_viz(Pvals_path, Tvals_path, C1_path, C2_path, mask_path, save_destination, affine, header, combination )
+    fdr_correction_and_viz(Pvals_path, Tvals_path, C1_path, C2_path, mask_path,\
+     save_destination, affine, header, combination )
 
 
 
 #     print(C2_path)
 
 
-def main(paths, params, num_proc = 7):
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
-    functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
-    fc_datasink_name=paths[9]
-    atlasPath=paths[10]
-    brain_path=paths[11]
+def main(paths, calc_residual, smoothing, band_pass_filtering, volCorrect,
+ num_proc = 7, calc_residual_options = None):
+    # json_path=paths[0]
+    base_directory=paths['base_directory']
+    # motion_correction_bet_directory=paths[2]
+    # parent_wf_directory=paths[3]
+    # functional_connectivity_directory=paths[4]
+    # coreg_reg_directory=paths[5]
+    # atlas_resize_reg_directory=paths[6]
+    # subject_list = paths[7]
+    # datasink_name=paths[8]
+    fc_datasink_name=paths['fc_datasink_name']
+    # atlasPath=paths[10]
+    brain_path=paths['brain_path']
     # mask_path=paths[12]
-    atlas_path=paths[13]
-    tr_path=paths[14]
-    motion_params_path=paths[15]
-    func2std_mat_path=paths[16]
-    MNI3mm_path=paths[17]
-    demographics_file_path = paths[18]
-    phenotype_file_path = paths[19]
-    data_directory = paths[20]
-    hypothesis_test_dir = paths[21]
-    fdr_results_dir = paths[22]
-
+    # atlas_path=paths[13]
+    # tr_path=paths[14]
+    # motion_params_path=paths[15]
+    # func2std_mat_path=paths[16]
+    # MNI3mm_path=paths[17]
+    # demographics_file_path = paths[18]
+    # phenotype_file_path = paths[19]
+    # data_directory = paths[20]
+    hypothesis_test_dir = paths['hypothesis_test_dir']
+    fdr_results_dir = paths['fdr_results_dir']
+    binarized_atlas_mask_path = paths['binarized_atlas_mask_path']
 
 
     # import pdb; pdb.set_trace()
@@ -364,14 +368,26 @@ def main(paths, params, num_proc = 7):
 
     # mask_path =  mni2mmMask # MNI 3mm brain voxels
     # mask_path = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample_mask.nii.gz')
-    mask_path =  '/home1/varunk/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz'
+    mask_path =  binarized_atlas_mask_path
+    # '/home1/varunk/atlas/Full_brain_atlas_thr0-2mm/fullbrain_atlas_thr0-3mm_binarized.nii.gz'
 
-    motion_param_regression, global_signal_regression, smoothing,band_pass_filtering, volCorrect = params # just execute again-- hereee
+    # motion_param_regression, global_signal_regression, smoothing,band_pass_filtering, volCorrect = params # just execute again-- hereee
 
-    combination = 'motionRegress' + str(int(motion_param_regression)) +\
-                  'global' + str(int(global_signal_regression)) + \
-                  'smoothing' + str(int(smoothing)) +\
-                  'filt' + str(int(band_pass_filtering))
+    # combination = 'motionRegress' + str(int(motion_param_regression)) +\
+    #               'global' + str(int(global_signal_regression)) + \
+    #               'smoothing' + str(int(smoothing)) +\
+    #               'filt' + str(int(band_pass_filtering))
+
+    comb = ''
+    for a in calc_residual_options:
+        comb = comb + a
+
+    combination = 'calc_residual' + str(int(calc_residual)) + \
+    'smoothing' + str(int(smoothing)) +\
+    'filt' + str(int(band_pass_filtering)) +\
+    'calc_residual_options' + comb
+
+    print("Combination: ",combination)
 
 
     fc_file_list = opj(base_directory,fc_datasink_name,combination,'fc_map_brain_file_list.npy')
@@ -386,9 +402,11 @@ def main(paths, params, num_proc = 7):
 
 
     pool = Pool(num_proc)
+    #
+    # itr = [(motion_param_regression, band_pass_filtering,global_signal_regression,
+    #  smoothing,base_directory, hypothesis_test_dir, header, mask_path, affine,fdr_results_dir)]
 
-    itr = [(motion_param_regression, band_pass_filtering,global_signal_regression, smoothing,base_directory, hypothesis_test_dir, header, mask_path, affine,fdr_results_dir)]
-
+    itr = [(combination, base_directory, hypothesis_test_dir, header, mask_path, affine, fdr_results_dir)]
     data_outputs = pool.map(_main, itr)
 
 

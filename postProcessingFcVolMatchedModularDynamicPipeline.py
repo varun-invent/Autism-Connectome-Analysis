@@ -25,6 +25,7 @@ import nibabel as nib
 import json
 import numpy as np
 import pandas as pd
+from confounds import confounds_creation as _calc_residuals
 
 
 
@@ -76,29 +77,34 @@ import pandas as pd
 #
 # MNI3mm_path = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample.nii')
 
-def main(paths, vols, motion_param_regression=0, global_signal_regression=0, band_pass_filtering=0, \
-smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7 ):
-    json_path=paths[0]
-    base_directory=paths[1]
-    motion_correction_bet_directory=paths[2]
-    parent_wf_directory=paths[3]
-    functional_connectivity_directory=paths[4]
-    coreg_reg_directory=paths[5]
-    atlas_resize_reg_directory=paths[6]
-    subject_list = paths[7]
-    datasink_name=paths[8]
-    fc_datasink_name=paths[9]
-    atlasPath=paths[10]
-    brain_path=paths[11]
-    mask_path=paths[12]
-    atlas_path=paths[13]
-    tr_path=paths[14]
-    motion_params_path=paths[15]
-    func2std_mat_path=paths[16]
-    MNI3mm_path=paths[17]
-    demographics_file_path = paths[18]
-    phenotype_file_path = paths[19]
-    data_directory = paths[20]
+def main(paths, vols, calc_residual=0, band_pass_filtering=0, \
+smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7,\
+save_npy = 0, calc_residual_options=None, OVERWRITE_POSTPROS_DIR = False,
+run = 1, session = None
+):
+    json_path=paths['json_path']
+    base_directory=paths['base_directory']
+    motion_correction_bet_directory=paths['motion_correction_bet_directory']
+    parent_wf_directory=paths['parent_wf_directory']
+    functional_connectivity_directory=paths['functional_connectivity_directory']
+    coreg_reg_directory=paths['coreg_reg_directory']
+    atlas_resize_reg_directory=paths['atlas_resize_reg_directory']
+    subject_list = paths['subject_list']
+    datasink_name=paths['datasink_name']
+    fc_datasink_name=paths['fc_datasink_name']
+    atlasPath=paths['atlasPath']
+    brain_path=paths['brain_path']
+    mask_path=paths['mask_path']
+    atlas_path=paths['atlas_path']
+    tr_path=paths['tr_path']
+    motion_params_path=paths['motion_params_path']
+    func2std_mat_path=paths['func2std_mat_path']
+    MNI3mm_path=paths['MNI3mm_path']
+    demographics_file_path = paths['demographics_file_path']
+    phenotype_file_path = paths['phenotype_file_path']
+    data_directory = paths['data_directory']
+    csf_path = paths['csf_path']
+    wm_path = paths['wm_path']
 
 
     print('Brain Paths',brain_path)
@@ -111,7 +117,8 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7 ):
     tr_path = np.load(tr_path)
     motion_params_path = np.load(motion_params_path)
     func2std_mat_path = np.load(func2std_mat_path)
-
+    csf_path = np.load(csf_path)
+    wm_path =np.load(wm_path)
 
 
 
@@ -127,7 +134,7 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7 ):
     subject_list = list(map(int, subject_list))
 
     if volcorrect == 1:
-        subject_list, subid_vol_dict = volumeCorrect(subject_list, phenotype_file_path, demographics_file_path, vols )
+        subject_list, subid_vol_dict = volumeCorrect(data_directory, subject_list, run, session, vols )
     else:
         subid_vol_dict = None
 
@@ -141,21 +148,78 @@ smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7 ):
         MNI3mm_path,\
         base_directory,\
         fc_datasink_name,\
-        motion_param_regression,\
+        calc_residual,\
         band_pass_filtering,\
-        global_signal_regression,\
         smoothing,\
         volcorrect,\
         num_proc,\
-        functional_connectivity_directory )
+        functional_connectivity_directory,\
+        save_npy,\
+        csf_path,\
+        wm_path,\
+        calc_residual_options,OVERWRITE_POSTPROS_DIR, data_directory, run, session)
+
+def volumeCorrect(data_directory, subject_list, run=1, session=None, vols=None):
+    '''
+    load BIDS data grabber
+    load the VOLUMES from metadata for each subject
+    Create a Sub_ID_VOlumes dict
+    select subjects that have volumes > threshold
+    '''
+    from bids.grabbids import BIDSLayout
+    print('Data Directory %s'% data_directory)
+    print('Run %s Session %s'%(run,session))
+
+     # = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+
+    layout = BIDSLayout(data_directory)
+    # subjects = layout.get_subjects()
+    subjects = subject_list
+    subid_vol_dict = {}
+    subject_list = []
 
 
 
-def volumeCorrect(subject_list, phenotype_file_path = None, demographics_file_path = None, vols = None):
+
+    for subject_id in subjects:
+        if session == None:
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+            if len(func_file_path) == 0:
+                print('No Func file: %s'%subject_id)
+                continue
+        else:
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session[0], run=run, extensions=['nii', 'nii.gz'])]
+            if len(func_file_path) == 0:
+                func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session[1], run=run, extensions=['nii', 'nii.gz'])]
+                if len(func_file_path) == 0:
+                    print('No Func file: %s'%subject_id)
+                    continue
+
+        # print(func_file_path)
+        metadata = layout.get_metadata(path=func_file_path[0])
+        volumes  = metadata['NumberofMeasurements']
+        try:
+            volumes = int(volumes)
+        except ValueError:
+            # Mixed Volumes site
+            brain_img = nib.load(func_file_path[0])
+            volumes = brain_img.shape[-1]
+
+        if volumes >= vols:
+            subid_vol_dict[subject_id] = volumes
+            subject_list.append(subject_id)
+
+
+
+    return subject_list, subid_vol_dict
+
+def __volumeCorrect__(subject_list, phenotype_file_path = None, demographics_file_path = None, vols = None):
     if demographics_file_path == None:
-        demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
+        raise Exception('Demographics file not supplied')
+        # demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
     if phenotype_file_path == None:
-        phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
+        raise Exception('Phenotype file not supplied')
+        # phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 
     df_phenotype = pd.read_csv(phenotype_file_path)
 
@@ -175,6 +239,7 @@ def volumeCorrect(subject_list, phenotype_file_path = None, demographics_file_pa
     # Delete the site index which has volume < vols
 
     if vols == None:
+        print('Performing volume correction with DEFAULT number of volumes: %s '%vols)
         vols = 120
 
 
@@ -218,13 +283,15 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     MNI3mm_path,\
     base_directory,\
     fc_datasink_name,\
-   motion_param_regression,\
+   calc_residual,\
    band_pass_filtering,\
-   global_signal_regression,\
    smoothing,\
    volcorrect,\
    num_proc,\
-   functional_connectivity_directory ):
+   functional_connectivity_directory, save_npy,\
+    csf_path,\
+    wm_path,\
+    calc_residual_options, OVERWRITE_POSTPROS_DIR, data_directory, run, session):
 
     # ## Volume correction
     # * I have already extracted 4 volumes.
@@ -263,17 +330,19 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
 
-    def get_subject_filenames(subject_id,brain_path,mask_path,atlas_path,tr_path,motion_params_path,func2std_mat_path,MNI3mm_path):
+    def get_subject_filenames(subject_id,brain_path,mask_path,atlas_path,
+    tr_path,motion_params_path,func2std_mat_path,MNI3mm_path,csf_path,wm_path):
         import re
         from itertools import zip_longest
-        for brain,mask,atlas,tr,motion_param,func2std_mat in zip_longest(brain_path,mask_path,atlas_path,tr_path,motion_params_path,func2std_mat_path): #itertools helps to zip unequal save_file_list_in_mask
+        for brain,mask,atlas,tr,motion_param,func2std_mat, csf ,wm in zip_longest(
+        brain_path,mask_path,atlas_path,tr_path,motion_params_path,func2std_mat_path, csf_path ,wm_path): #itertools helps to zip unequal save_file_list_in_mask
         #  Source : https://stackoverflow.com/questions/11318977/zipping-unequal-lists-in-python-in-to-a-list-which-does-not-drop-any-element-fro
-            print('*******************',brain,mask,atlas,tr,motion_param,func2std_mat)
+            print('*******************',brain,mask,atlas,tr,motion_param,func2std_mat, csf ,wm)
 
             sub_id_extracted = re.search('.+_subject_id_(\d+)', brain).group(1)
             if str(subject_id) in brain:
     #             print("Files for subject ",subject_id,brain,mask,atlas,tr,motion_param)
-                return brain,mask,atlas,tr,motion_param,func2std_mat,MNI3mm_path
+                return brain,mask,atlas,tr,motion_param,func2std_mat,MNI3mm_path,csf ,wm
 
         print ('Unable to locate Subject: ',subject_id,'extracted: ',sub_id_extracted)
         # print ('Unable to locate Subject: ',subject_id)
@@ -285,8 +354,9 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
     # Make a node
-    getSubjectFilenames = Node(Function(function=get_subject_filenames, input_names=['subject_id','brain_path','mask_path','atlas_path','tr_path','motion_params_path','func2std_mat_path','MNI3mm_path'],
-                                    output_names=['brain','mask','atlas','tr','motion_param','func2std_mat', 'MNI3mm_path']), name='getSubjectFilenames')
+    getSubjectFilenames = Node(Function(function=get_subject_filenames, input_names=['subject_id',
+    'brain_path','mask_path','atlas_path','tr_path','motion_params_path','func2std_mat_path','MNI3mm_path','csf_path','wm_path'],
+    output_names=['brain','mask','atlas','tr','motion_param','func2std_mat', 'MNI3mm_path','csf','wm']), name='getSubjectFilenames')
 
 
     getSubjectFilenames.inputs.brain_path = brain_path
@@ -296,7 +366,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     getSubjectFilenames.inputs.motion_params_path = motion_params_path
     getSubjectFilenames.inputs.func2std_mat_path = func2std_mat_path
     getSubjectFilenames.inputs.MNI3mm_path = MNI3mm_path
-
+    getSubjectFilenames.inputs.csf_path = csf_path
+    getSubjectFilenames.inputs.wm_path = wm_path
 
 
 
@@ -317,6 +388,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
                              despike=False, no_detrend=True, notrans=True,
                              outputtype='NIFTI_GZ'),name='bandpass')
 
+
+    # outputtype='NIFTI_GZ'
     # bandpass = Node(afni.Bandpass(highpass=0.001, lowpass=0.01,
     #                          despike=False, no_detrend=True, notrans=True,
     #                          tr=2.0,outputtype='NIFTI_GZ'),name='bandpass')
@@ -450,99 +523,102 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # In[511]:
 
 
-    def calc_residuals(in_file,
-                       motion_file):
-        """
-        Calculates residuals of nuisance regressors -motion parameters for every voxel for a subject using GLM.
+    # def calc_residuals(in_file,
+    #                    motion_file):
+    #     """
+    #     Calculates residuals of nuisance regressors -motion parameters for every voxel for a subject using GLM.
+    #
+    #     Parameters
+    #     ----------
+    #     in_file : string
+    #         Path of a subject's motion corrected nifti file.
+    #     motion_par_file : string
+    #         path of a subject's motion parameters
+    #
+    #
+    #     Returns
+    #     -------
+    #     out_file : string
+    #         Path of residual file in nifti format
+    #
+    #     """
+    #     import nibabel as nb
+    #     import numpy as np
+    #     import os
+    #     from os.path import join as opj
+    #     nii = nb.load(in_file)
+    #     data = nii.get_data().astype(np.float32)
+    #     global_mask = (data != 0).sum(-1) != 0
+    #
+    #
+    #     # Check and define regressors which are provided from files
+    #     if motion_file is not None:
+    #         motion = np.genfromtxt(motion_file)
+    #         if motion.shape[0] != data.shape[3]:
+    #             raise ValueError('Motion parameters {0} do not match data '
+    #                              'timepoints {1}'.format(motion.shape[0],
+    #                                                      data.shape[3]))
+    #         if motion.size == 0:
+    #             raise ValueError('Motion signal file {0} is '
+    #                              'empty'.format(motion_file))
+    #
+    #     # Calculate regressors
+    #     regressor_map = {'constant' : np.ones((data.shape[3],1))}
+    #
+    #     regressor_map['motion'] = motion
+    #
+    #
+    #     X = np.zeros((data.shape[3], 1))
+    #
+    #     for rname, rval in regressor_map.items():
+    #         X = np.hstack((X, rval.reshape(rval.shape[0],-1)))
+    #
+    #     X = X[:,1:]
+    #
+    #     if np.isnan(X).any() or np.isnan(X).any():
+    #         raise ValueError('Regressor file contains NaN')
+    #
+    #     Y = data[global_mask].T
+    #
+    #     try:
+    #         B = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
+    #     except np.linalg.LinAlgError as e:
+    #         if "Singular matrix" in e:
+    #             raise Exception("Error details: {0}\n\nSingular matrix error: "
+    #                             "The nuisance regression configuration you "
+    #                             "selected may have been too stringent, and the "
+    #                             "regression could not be completed. Ensure your "
+    #                             "parameters are not too "
+    #                             "extreme.\n\n".format(e))
+    #         else:
+    #             raise Exception("Error details: {0}\n\nSomething went wrong with "
+    #                             "nuisance regression.\n\n".format(e))
+    #
+    #     Y_res = Y - X.dot(B)
+    #
+    #     data[global_mask] = Y_res.T
+    #
+    #     img = nb.Nifti1Image(data, header=nii.get_header(),
+    #                          affine=nii.get_affine())
+    #
+    #     subject_name = in_file.split('/')[-1].split('.')[0]
+    #     filename = subject_name + '_residual.nii.gz'
+    #     out_file = os.path.join(os.getcwd(),filename )
+    #     img.to_filename(out_file) # alt to nib.save
+    #
+    #     return out_file
+    #
+    #
+    # # In[512]:
+    #
+    #
+    # # Create a Node for above
+    # calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file','motion_file'],
+    #                                 output_names=['out_file']), name='calc_residuals')
 
-        Parameters
-        ----------
-        in_file : string
-            Path of a subject's motion corrected nifti file.
-        motion_par_file : string
-            path of a subject's motion parameters
-
-
-        Returns
-        -------
-        out_file : string
-            Path of residual file in nifti format
-
-        """
-        import nibabel as nb
-        import numpy as np
-        import os
-        from os.path import join as opj
-        nii = nb.load(in_file)
-        data = nii.get_data().astype(np.float32)
-        global_mask = (data != 0).sum(-1) != 0
-
-
-        # Check and define regressors which are provided from files
-        if motion_file is not None:
-            motion = np.genfromtxt(motion_file)
-            if motion.shape[0] != data.shape[3]:
-                raise ValueError('Motion parameters {0} do not match data '
-                                 'timepoints {1}'.format(motion.shape[0],
-                                                         data.shape[3]))
-            if motion.size == 0:
-                raise ValueError('Motion signal file {0} is '
-                                 'empty'.format(motion_file))
-
-        # Calculate regressors
-        regressor_map = {'constant' : np.ones((data.shape[3],1))}
-
-        regressor_map['motion'] = motion
-
-
-        X = np.zeros((data.shape[3], 1))
-
-        for rname, rval in regressor_map.items():
-            X = np.hstack((X, rval.reshape(rval.shape[0],-1)))
-
-        X = X[:,1:]
-
-        if np.isnan(X).any() or np.isnan(X).any():
-            raise ValueError('Regressor file contains NaN')
-
-        Y = data[global_mask].T
-
-        try:
-            B = np.linalg.inv(X.T.dot(X)).dot(X.T).dot(Y)
-        except np.linalg.LinAlgError as e:
-            if "Singular matrix" in e:
-                raise Exception("Error details: {0}\n\nSingular matrix error: "
-                                "The nuisance regression configuration you "
-                                "selected may have been too stringent, and the "
-                                "regression could not be completed. Ensure your "
-                                "parameters are not too "
-                                "extreme.\n\n".format(e))
-            else:
-                raise Exception("Error details: {0}\n\nSomething went wrong with "
-                                "nuisance regression.\n\n".format(e))
-
-        Y_res = Y - X.dot(B)
-
-        data[global_mask] = Y_res.T
-
-        img = nb.Nifti1Image(data, header=nii.get_header(),
-                             affine=nii.get_affine())
-
-        subject_name = in_file.split('/')[-1].split('.')[0]
-        filename = subject_name + '_residual.nii.gz'
-        out_file = os.path.join(os.getcwd(),filename )
-        img.to_filename(out_file) # alt to nib.save
-
-        return out_file
-
-
-    # In[512]:
-
-
-    # Create a Node for above
-    calc_residuals = Node(Function(function=calc_residuals, input_names=['in_file','motion_file'],
-                                    output_names=['out_file']), name='calc_residuals')
-
+    calc_residuals = Node(Function(function=_calc_residuals.calc_residuals, input_names=['in_file', 'motion_file',
+     'csf_mask_path', 'wm_mask_path','global_signal_flag','const','check_orthogonality'],
+                                    output_names=['out_file_list']), name='calc_residuals')
 
     # ## Datasink
     # I needed to define the structure of what files are saved and where.
@@ -578,7 +654,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # In[516]:
 
 
-    def save_file_list_function(in_fc_map_brain_file):
+    def save_file_list_function_brain(in_fc_map_brain_file):
         # Imports
         import numpy as np
         import os
@@ -593,10 +669,6 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         out_fc_map_brain_file = opj(os.getcwd(),file_name) # path
 
 
-
-
-
-
         return out_fc_map_brain_file
 
 
@@ -604,11 +676,58 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     # In[517]:
 
 
-    save_file_list = JoinNode(Function(function=save_file_list_function, input_names=['in_fc_map_brain_file'],
+    save_file_list_brain = JoinNode(Function(function=save_file_list_function_brain, input_names=['in_fc_map_brain_file'],
                      output_names=['out_fc_map_brain_file']),
                      joinsource="infosource",
                      joinfield=['in_fc_map_brain_file'],
-                     name="save_file_list")
+                     name="save_file_list_brain")
+
+    # Utility function that saves the file paths correlation maps' (which are in npy format)
+
+    def save_file_list_function_npy(in_fc_map_npy_file):
+        # Imports
+        import numpy as np
+        import os
+        from os.path import join as opj
+
+
+        file_list = np.asarray(in_fc_map_npy_file)
+        print('######################## File List ######################: \n',file_list)
+
+        np.save('fc_map_npy_file_list',file_list)
+        file_name = 'fc_map_npy_file_list.npy'
+        out_fc_map_npy_file = opj(os.getcwd(),file_name) # path
+
+
+        return out_fc_map_npy_file
+
+
+
+    # In[517]:
+
+
+    save_file_list_npy = JoinNode(Function(function=save_file_list_function_npy, input_names=['in_fc_map_npy_file'],
+                     output_names=['out_fc_map_npy_file']),
+                     joinsource="infosource",
+                     joinfield=['in_fc_map_npy_file'],
+                     name="save_file_list_npy")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     # ## Create a FC node
@@ -649,6 +768,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         brain_data = nib.load(in_file)
         brain = brain_data.get_data()
 
+        # _global_mask = (data != 0).sum(-1) != 0
+
         x_dim, y_dim, z_dim, num_volumes = brain.shape
 
 
@@ -656,11 +777,18 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         x_dim, y_dim, z_dim = mask_data.shape
 
-        for i in range(x_dim):
-            for j in range(y_dim):
-                for k in range(z_dim):
-                    if mask[i,j,k] == 1:
-                        num_brain_voxels = num_brain_voxels + 1
+        # for i in range(x_dim):
+        #     for j in range(y_dim):
+        #         for k in range(z_dim):
+        #             if mask[i,j,k] == 1:
+        #                 num_brain_voxels = num_brain_voxels + 1
+
+        # Optimized: number of brain voxels
+        num_brain_voxels_optimized = len(np.where(mask == 1)[0])
+        num_brain_voxels = num_brain_voxels_optimized
+        # Check
+        # assert(num_brain_voxels == num_brain_voxels_optimized)
+        # --------------------------------------------------------------------
 
         # Initialize a matrix of ROI time series and voxel time series
 
@@ -669,13 +797,22 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         # Fill up the voxel_matrix
 
-        voxel_counter = 0
-        for i in range(x_dim):
-            for j in range(y_dim):
-                for k in range(z_dim):
-                    if mask[i,j,k] == 1:
-                        voxel_matrix[voxel_counter,:] = brain[i,j,k,:]
-                        voxel_counter = voxel_counter + 1
+        # voxel_counter = 0
+        # for i in range(x_dim):
+        #     for j in range(y_dim):
+        #         for k in range(z_dim):
+        #             if mask[i,j,k] == 1:
+        #                 voxel_matrix[voxel_counter,:] = brain[i,j,k,:]
+        #                 voxel_counter = voxel_counter + 1
+
+
+        # Optimized:
+        voxel_matrix_optimized = brain[mask == 1]
+        voxel_matrix = voxel_matrix_optimized
+        # print('**************Size: voxel_matrix %s voxel_matrix_optimized %s'%(voxel_matrix.shape, voxel_matrix_optimized.shape))
+        # Check
+        # assert((voxel_matrix == voxel_matrix_optimized).all())
+
 
 
         # Fill up the ROI_matrix
@@ -724,6 +861,10 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         roi_brain_matrix = coff_matrix
         brain_file = in_file
 
+        # print('coff_matrix',coff_matrix)
+        # print('MAXXXXXXX', np.max(coff_matrix))
+        # assert (np.max(coff_matrix) > 0)
+
 
         x_dim, y_dim, z_dim, t_dim = brain.shape
 
@@ -731,30 +872,43 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
         brain_roi_tensor = np.zeros((brain_data.header.get_data_shape()))
 
+        # TODO Remove the loops to decrease the running time
         print("Creating brain for Subject-",sub_id)
+        # for roi in range(num_ROIs):
+        #     brain_voxel_counter = 0
+        #     for i in range(x_dim):
+        #         for j in range(y_dim):
+        #             for k in range(z_dim):
+        #                 if mask[i,j,k] == 1:
+        #                     brain_roi_tensor[i,j,k,roi] = roi_brain_matrix[roi,brain_voxel_counter]
+        #                     brain_voxel_counter = brain_voxel_counter + 1
+        #
+        #
+        #     assert (brain_voxel_counter == len(roi_brain_matrix[roi,:]))
+        # print("Created brain for Subject-",sub_id)
+
+        # Optimized
+        # print("Check Optimised  brain_roi_tensor is correct or not")
+        brain_roi_tensor_optimized = np.zeros((brain_data.header.get_data_shape()))
         for roi in range(num_ROIs):
-            brain_voxel_counter = 0
-            for i in range(x_dim):
-                for j in range(y_dim):
-                    for k in range(z_dim):
-                        if mask[i,j,k] == 1:
-                            brain_roi_tensor[i,j,k,roi] = roi_brain_matrix[roi,brain_voxel_counter]
-                            brain_voxel_counter = brain_voxel_counter + 1
+            brain_roi_tensor_roi_voxels = brain_roi_tensor_optimized[:,:,:,roi]
+            brain_roi_tensor_roi_voxels[mask == 1] = roi_brain_matrix[roi,:]
 
-
-            assert (brain_voxel_counter == len(roi_brain_matrix[roi,:]))
         print("Created brain for Subject-",sub_id)
+
+        # assert((brain_roi_tensor == brain_roi_tensor_optimized).all())
 
 
         path = os.getcwd()
-        fc_file_name = fc_file_name + '.nii.gz'
-        out_file = opj(path,fc_file_name)
+        fc_brain_file_name = fc_file_name + '.nii.gz'
+        out_file_brain = opj(path,fc_brain_file_name)
 
-        brain_with_header = nib.Nifti1Image(brain_roi_tensor, affine=brain_data.affine,header = brain_data.header)
-        nib.save(brain_with_header,out_file)
+        brain_with_header = nib.Nifti1Image(brain_roi_tensor_optimized, affine=brain_data.affine,header = brain_data.header)
+        nib.save(brain_with_header,out_file_brain)
 
 
-        fc_map_brain_file = out_file
+        fc_map_brain_file = out_file_brain
+
         return fc_map_brain_file
 
 
@@ -800,9 +954,37 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
 
+    def convert_nii_2_npy_func(in_file):
+        import nibabel as  nib
+        import numpy as np
+        import os
+        from os.path import join as opj
+
+        file_name_nii = in_file
+        subject_id = file_name_nii.split('/')[-1].split('_')[0]
+        filename = 'sub-'+subject_id+'.npy'
+        print('converting the Brain of subject %s to npy with filename %s'%(subject_id, filename))
+
+        brain = nib.load(file_name_nii).get_data()
+        np.save(filename,brain)
 
 
-    # motion_param_regression = 1
+        path = os.getcwd()
+        out_file = opj(path,filename)
+
+        return out_file
+
+
+    nii2npy = Node(Function(function=convert_nii_2_npy_func, input_names=['in_file'],
+                                    output_names=['out_file']), name='nii2npy')
+
+
+
+
+
+
+
+    # calc_residual = 1
     # band_pass_filtering = 0
     # global_signal_regression = 0
     # smoothing = 1
@@ -810,13 +992,23 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     if num_proc == None:
         num_proc = 7
 
-    combination = 'motionRegress' + str(int(motion_param_regression)) + \
-     'global' + str(int(global_signal_regression)) + 'smoothing' + str(int(smoothing)) +\
-     'filt' + str(int(band_pass_filtering))
+    comb = ''
+    for a in calc_residual_options:
+        comb = comb + a
+    if not OVERWRITE_POSTPROS_DIR:
+        combination = 'calc_residual' + str(int(calc_residual)) + \
+         'smoothing' + str(int(smoothing)) +\
+         'filt' + str(int(band_pass_filtering)) +\
+         'calc_residual_options' + comb
+    else:
+        combination = 'calc_residual' + str(int(calc_residual)) + \
+         'smoothing' + str(int(smoothing)) +\
+         'filt' + str(int(band_pass_filtering))
+
 
     print("Combination: ",combination)
 
-    binary_string = str(int(motion_param_regression)) + str(int(global_signal_regression)) + \
+    binary_string = str(int(calc_residual)) + \
     str(int(smoothing)) + str(int(band_pass_filtering)) + str(int(volcorrect))
 
     base_dir = opj(base_directory,functional_connectivity_directory)
@@ -833,18 +1025,23 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
     nodes = [
     calc_residuals,
-    globalSignalRemoval,
     spatialSmooth,
     bandpass,
     volCorrect]
+    # globalSignalRemoval, We dont need it now
 
 
-    # from nipype.interfaces import fsl
 
     old_node = getSubjectFilenames
     old_node_output = 'brain'
 
-    binary_string = binary_string+'0' # so that the loop runs one more time
+    binary_string = binary_string + '0' # so that the loop runs one more time
+
+    def select_item_from_array(arr, index=0):
+        import numpy as np
+        arr = np.array(arr)
+        return arr[index]
+
     for idx, include in enumerate(binary_string):
         # 11111
         # motion_param_regression
@@ -854,7 +1051,8 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
         # volcorrect
 
         if old_node == calc_residuals:
-            old_node_output = 'out_file'
+            old_node_output = ('out_file_list',select_item_from_array,-1)
+            # Desired residual file is the last item of the array i.e at (-1)
         elif old_node == extract :
             old_node_output = 'roi_file'
         elif old_node == globalSignalRemoval:
@@ -870,28 +1068,33 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
 
 
         if int(include):
-            # if old_node is None:
-            #
-            #     wf.add_nodes([nodes[idx]])
-            #
-            # else:
-
-
 
             new_node = nodes[idx]
 
 
             if new_node == calc_residuals:
-                wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
+                # 'const','csf', 'wm', , 'global'
+                if 'const' in calc_residual_options:
+                    calc_residuals.inputs.const = True
+
+                if 'motion' in calc_residual_options:
+                    wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
+                if 'global' in calc_residual_options:
+                    calc_residuals.inputs.global_signal_flag = True
+
+                if 'csf' in calc_residual_options:
+                    wf.connect([(getSubjectFilenames, calc_residuals, [('csf', 'csf_mask_path')])])
+                if 'wm' in calc_residual_options:
+                    wf.connect([(getSubjectFilenames, calc_residuals, [('wm', 'wm_mask_path')])])
                 new_node_input = 'in_file'
 
             elif new_node == extract :
                 wf.connect([( volCorrect, extract, [('t_min','t_min')])])
                 new_node_input = 'in_file'
 
-            elif new_node == globalSignalRemoval:
-                wf.connect([(getSubjectFilenames, globalSignalRemoval, [('mask','mask_file')])])
-                new_node_input = 'in_file'
+            # elif new_node == globalSignalRemoval: We dont need it now
+            #     wf.connect([(getSubjectFilenames, globalSignalRemoval, [('mask','mask_file')])])
+            #     new_node_input = 'in_file'
 
             elif new_node == bandpass:
                 wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
@@ -935,8 +1138,15 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     wf.connect(getSubjectFilenames, 'MNI3mm_path', func2std_xform,'reference')
 
     folder_name = combination + '.@fc_map_brain_file'
-    wf.connect(func2std_xform, 'out_file',  save_file_list, 'in_fc_map_brain_file')
-    wf.connect(save_file_list, 'out_fc_map_brain_file',  dataSink,folder_name)
+    wf.connect(func2std_xform, 'out_file',  save_file_list_brain, 'in_fc_map_brain_file')
+    wf.connect(save_file_list_brain, 'out_fc_map_brain_file',  dataSink,folder_name)
+
+    if save_npy == 1:
+        folder_name = combination + '.@fc_map_npy_file'
+        wf.connect(func2std_xform, 'out_file', nii2npy,'in_file')
+        wf.connect(nii2npy, 'out_file',  save_file_list_npy, 'in_fc_map_npy_file')
+        wf.connect(save_file_list_npy, 'out_fc_map_npy_file',  dataSink,folder_name)
+
 
 
     TEMP_DIR_FOR_STORAGE = opj(base_directory,'crash_files')
@@ -946,166 +1156,3 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
     wf.run('MultiProc', plugin_args={'n_procs': num_proc})
 
     # -------------------------------------------------
-
-
-
-
-
-
-    # if motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 1 and smoothing == 1 and volcorrect == 1: # 101
-    #
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('brain','in_file')])])
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
-    #
-    #     wf.connect([( calc_residuals, extract, [('out_file','in_file')])])
-    #
-    #     wf.connect([(infosource, volCorrect, [('subject_id','sub_id')])])
-    #
-    #     wf.connect([( volCorrect, extract, [('t_min','t_min')])])
-    #
-    #     wf.connect([(extract, bandpass, [('roi_file','in_file')])])
-    #
-    #     wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
-    #
-    #     wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
-    #
-    #     wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
-    #
-    #
-    # #     wf.connect([( extract, pearcoff, [('roi_file','in_file')])])
-    #
-    #     # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
-    #
-    #     # ---------------------------------------------------------------------------------------
-    #     wf.connect([(pearcoff, func2std_xform, [('fc_map_brain_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('func2std_mat','in_matrix_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('MNI3mm_path','reference')])])
-    #
-    #     #         -- send out file to save file list and then save the outputs
-    #
-    #
-    #
-    #     folder_name = combination + '.@fc_map_brain_file'
-    #
-    #
-    #
-    #     wf.connect([(func2std_xform,  save_file_list, [('out_file','in_fc_map_brain_file')])])
-    #     # --------------------------------------------------------------------------------------------
-    #
-    #
-    #     wf.connect([(save_file_list,  dataSink, [('out_fc_map_brain_file',folder_name)])])
-    #
-    #     wf.write_graph(graph2use='flat', format='png')
-    # #     from IPython.display import Image
-    # #     wf.write_graph(graph2use='exec', format='png', simple_form=True)
-    #
-    #     wf.run('MultiProc', plugin_args={'n_procs': num_proc})
-    # #     file_name = opj(base_dir,combination,'graph_detailed.dot.png')
-    # #     Image(filename=file_name)
-    #
-    # elif motion_param_regression == 1 and global_signal_regression == 1 and band_pass_filtering == 1 and smoothing == 1 and volcorrect == 1: #111
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('brain','in_file')])])
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
-    #
-    #     wf.connect([(calc_residuals, extract, [('out_file','in_file')])])
-    #
-    #     wf.connect([(infosource, volCorrect, [('subject_id','sub_id')])])
-    #
-    #     wf.connect([( volCorrect, extract, [('t_min','t_min')])])
-    #
-    #     wf.connect([(extract, globalSignalRemoval, [('roi_file','in_file')])])
-    #
-    #
-    # #     wf.connect([(calc_residuals, globalSignalRemoval, [('out_file','in_file')] )])
-    #     wf.connect([(getSubjectFilenames, globalSignalRemoval, [('mask','mask_file')])])
-    #
-    #     wf.connect([(globalSignalRemoval, bandpass, [('out_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, bandpass, [('tr','tr')])])
-    #
-    #     wf.connect([( bandpass, spatialSmooth, [('out_file','in_file')])])
-    #
-    #     wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
-    #
-    #     # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
-    #
-    #     # ---------------------------------------------------------------------------------------
-    #     wf.connect([(pearcoff, func2std_xform, [('fc_map_brain_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('func2std_mat','in_matrix_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('MNI3mm_path','reference')])])
-
-    #         -- send out file to save file list and then save the outputs
-
-
-
-        # folder_name = combination + '.@fc_map_brain_file'
-        #
-        #
-        #
-        # wf.connect([(func2std_xform,  save_file_list, [('out_file','in_fc_map_brain_file')])])
-        # # --------------------------------------------------------------------------------------------
-        #
-        #
-        # wf.connect([(save_file_list,  dataSink, [('out_fc_map_brain_file',folder_name)])])
-        #
-        #
-        # #  wf.connect([(bandpass,  dataSink, [('out_file','motionRegress_filt_global.@out_file')])])
-        #
-        #
-        # # if motion_param_regression == 1 and global_signal_regression == 1:
-        # wf.write_graph(graph2use='flat', format='png')
-        # wf.run('MultiProc', plugin_args={'n_procs': num_proc})
-
-
-    # elif motion_param_regression == 1 and global_signal_regression == 0 and band_pass_filtering == 0 and smoothing == 1 and volcorrect == 1: # 100
-    #
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('brain','in_file')])])
-    #     wf.connect([(getSubjectFilenames, calc_residuals, [('motion_param', 'motion_file')])])
-    #
-    #     wf.connect([( calc_residuals, extract, [('out_file','in_file')])])
-    #
-    #     wf.connect([(infosource, volCorrect, [('subject_id','sub_id')])])
-    #
-    #     wf.connect([( volCorrect, extract, [('t_min','t_min')])])
-    #
-    #     wf.connect([(extract, highpass, [('roi_file','in_file')])])
-    #
-    #     wf.connect([(getSubjectFilenames, highpass, [('tr','tr')])])
-    #
-    #     wf.connect([( highpass, spatialSmooth, [('out_file','in_file')])])
-    #
-    #     wf.connect([( spatialSmooth, pearcoff, [('out_file','in_file')])])
-    #
-    #
-    # #     wf.connect([( extract, pearcoff, [('roi_file','in_file')])])
-    #
-    #     # wf.connect([( bandpass, pearcoff, [('out_file','in_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('atlas','atlas_file')])])
-    #     wf.connect([( getSubjectFilenames, pearcoff, [('mask','mask_file')])])
-    #
-    #     # ---------------------------------------------------------------------------------------
-    #     wf.connect([(pearcoff, func2std_xform, [('fc_map_brain_file','in_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('func2std_mat','in_matrix_file')])])
-    #     wf.connect([(getSubjectFilenames, func2std_xform, [('MNI3mm_path','reference')])])
-    #
-    #     #         -- send out file to save file list and then save the outputs
-    #
-    #
-    #
-    #     folder_name = combination + '.@fc_map_brain_file'
-    #
-    #
-    #
-    #     wf.connect([(func2std_xform,  save_file_list, [('out_file','in_fc_map_brain_file')])])
-    #     # --------------------------------------------------------------------------------------------
-    #
-    #
-    #     wf.connect([(save_file_list,  dataSink, [('out_fc_map_brain_file',folder_name)])])
-    #
-    #     wf.write_graph(graph2use='flat', format='png')
-    #
-    #
-    #     wf.run('MultiProc', plugin_args={'n_procs': num_proc})
