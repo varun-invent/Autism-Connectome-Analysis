@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<atlas version="1.0">
+  <header>
+    <name>Full Brain Atlas</name>
+    <shortname>FBA</shortname>
+    <type>Probabilistic</type>
+    <images>
+      <imagefile>/Full_brain_atlas/fullbrain_atlas</imagefile>
+      <summaryimagefile>/Full_brain_atlas/fullbrain_atlas-maxprob-thr0-2mm</summaryimagefile>
+  </header>
+  <data>
+  <label index="0" x="43" y="68" z="60">A8m_L</label>
+  <label index="1" x="48" y="71" z="59">A8m_R</label>
+  <label index="2" x="35" y="77" z="62">A8dl_L</label>
+  <label index="3" x="55" y="79" z="59">A8dl_R</label>
+  <label index="4" x="38" y="89" z="54">A9l_L</label>
+  <label index="5" x="53" y="86" z="57">A9l_R</label>
+  <label index="6" x="36" y="61" z="70">A6dl_L</label>
+  <label index="7" x="53" y="69" z="67">A6dl_R</label>
+  <label index="8" x="43" y="58" z="64">A6m_L</label>
+  <label index="9" x="48" y="60" z="70">A6m_R</label>
+  <label index="10" x="42" y="79" z="53">A9m_L</label>
+  <label index="11" x="47" y="82" z="53">A9m_R</label>
+  <label index="12" x="42" y="95" z="43">A10m_L</label>
+  <label index="13" x="48" y="90" z="40">A10m_R</label>
+  <label index="14" x="31" y="84" z="51">A9/46d_L</label>
+  <label index="15" x="60" y="83" z="53">A9/46d_R</label>
+  <label index="16" x="23" y="71" z="53">IFJ_L</label>
+  <label index="17" x="64" y="67" z="56">IFJ_R</label>
+  <label index="18" x="32" y="91" z="40">A46_L</label>
+  <label index="19" x="59" y="90" z="43">A46_R</label>
+  <label index="20" x="24" y="81" z="48">A9/46v_L</label>
+  <label index="21" x="66" y="88" z="39">A9/46v_R</label>
+  <label index="22" x="26" y="76" z="56">A8vl_L</label>
+  <label index="23" x="66" y="76" z="55">A8vl_R</label>
+  <label index="24" x="30" y="64" z="65">A6vl_L</label>
+  <label index="25" x="65" y="66" z="64">A6vl_R</label>
+  <label index="26" x="36" y="94" z="32">A10l_L</label>
+  <label index="27" x="56" y="94" z="32">A10l_R</label>
+  <label index="28" x="22" y="70" z="49">A44d_L</label>
+  <label index="29" x="67" y="70" z="49">A44d_R</label>
+  <label index="30" x="21" y="80" z="41">IFS_L</label>
+  <label index="31" x="68" y="82" z="41">IFS_R</label>
+  <label index="32" x="20" y="74" z="41">A45c_L</label>
+  <label index="33" x="72" y="75" z="42">A45c_R</label>
+  <label index="34" x="21" y="82" z="34">A45r_L</label>
+  <label index="35" x="70" y="82" z="35">A45r_R</label>
+  <label index="36" x="23" y="75" z="37">A44op_L</label>
+  <label index="37" x="68" y="75" z="37">A44op_R</label>
+  <label index="38" x="19" y="70" z="37">A44v_L</label>
+  <label index="39" x="71" y="69" z="38">A44v_R</label>
+  <label index="40" x="42" y="85" z="29">A14m_L</label>
+  <label index="41" x="48" y="89" z="33">A14m_R</label>
+  <label index="42" x="26" y="83" z="28">A12/47o_L</label>
+  <label index="43" x="65" y="79" z="28">A12/47o_R</label>
+  <label index="44" x="32" y="81" z="29">A11l_L</label>
+  <label index="45" x="59" y="81" z="29">A11l_R</label>
+  <label index="46" x="42" y="91" z="25">A11m_L</label>
+  <label index="47" x="48" y="93" z="27">A11m_R</label>
+  <label index="48" x="36" y="68" z="26">A13_L</label>
+  <label index="49" x="50" y="71" z="26">A13_R</label>
+  <label index="50" x="22" y="78" z="29">A12/47l_L</label>
+  <label index="51" x="69" y="78" z="30">A12/47l_R</label>
+  <label index="52" x="16" y="63" z="50">A4hf_L</label>
+  <label index="53" x="76" y="64" z="49">A4hf_R</label>
+  <label index="54" x="31" y="57" z="68">A6cdl_L</label>
+  <label index="55" x="59" y="59" z="63">A6cdl_R</label>
+  <label index="56" x="29" y="50" z="66">A4ul_L</label>
+  <label index="57" x="61" y="51" z="61">A4ul_R</label>
+  <label index="58" x="38" y="54" z="73">A4t_L</label>
+  <label index="59" x="52" y="55" z="73">A4t_R</label>
+  <label index="60" x="18" y="63" z="39">A4tl_L</label>
+  <label index="61" x="74" y="67" z="38">A4tl_R</label>
+  <label index="62" x="22" y="63" z="55">A6cvl_L</label>
+  <label index="63" x="69" y="66" z="53">A6cvl_R</label>
+  <label index="64" x="43" y="44" z="64">A1/2/3ll_L</label>
+  <label index="65" x="51" y="46" z="61">A1/2/3ll_R</label>
+  <label index="66" x="42" y="51" z="65">A4ll_L</label>
+  <label index="67" x="47" y="54" z="62">A4ll_R</label>
+  <label index="68" x="32" y="69" z="17">A38m_L</label>
+  <label index="69" x="60" y="71" z="17">A38m_R</label>
+  <label index="70" x="15" y="47" z="42">A41/42_L</label>
+  <label index="71" x="71" y="51" z="41">A41/42_R</label>
+  <label index="72" x="18" y="59" z="37">TE1.0/TE1.2_L</label>
+  <label index="73" x="72" y="64" z="35">TE1.0/TE1.2_R</label>
+  <label index="74" x="12" y="47" z="39">A22c_L</label>
+  <label index="75" x="78" y="57" z="36">A22c_R</label>
+  <label index="76" x="22" y="71" z="25">A38l_L</label>
+  <label index="77" x="67" y="72" z="25">A38l_R</label>
+  <label index="78" x="18" y="67" z="28">A22r_L</label>
+  <label index="79" x="74" y="65" z="31">A22r_R</label>
+  <label index="80" x="12" y="51" z="27">A21c_L</label>
+  <label index="81" x="78" y="50" z="28">A21c_R</label>
+  <label index="82" x="20" y="67" z="19">A21r_L</label>
+  <label index="83" x="68" y="68" z="17">A21r_R</label>
+  <label index="84" x="17" y="32" z="39">A37dl_L</label>
+  <label index="85" x="76" y="38" z="37">A37dl_R</label>
+  <label index="86" x="15" y="56" z="30">aSTS_L</label>
+  <label index="87" x="74" y="61" z="28">aSTS_R</label>
+  <label index="88" x="24" y="56" z="17">A20iv_L</label>
+  <label index="89" x="68" y="56" z="17">A20iv_R</label>
+  <label index="90" x="18" y="35" z="26">A37elv_L</label>
+  <label index="91" x="72" y="37" z="24">A37elv_R</label>
+  <label index="92" x="23" y="60" z="15">A20r_L</label>
+  <label index="93" x="66" y="62" z="13">A20r_R</label>
+  <label index="94" x="17" y="58" z="19">A20il_L</label>
+  <label index="95" x="72" y="59" z="18">A20il_R</label>
+  <label index="96" x="17" y="32" z="33">A37vl_L</label>
+  <label index="97" x="73" y="34" z="31">A37vl_R</label>
+  <label index="98" x="15" y="39" z="28">A20cl_L</label>
+  <label index="99" x="75" y="40" z="28">A20cl_R</label>
+  <label index="100" x="18" y="47" z="23">A20cv_L</label>
+  <label index="101" x="72" y="44" z="24">A20cv_R</label>
+  <label index="102" x="29" y="62" z="14">A20rv_L</label>
+  <label index="103" x="59" y="61" z="13">A20rv_R</label>
+  <label index="104" x="28" y="26" z="28">A37mv_L</label>
+  <label index="105" x="60" y="27" z="30">A37mv_R</label>
+  <label index="106" x="24" y="36" z="29">A37lv_L</label>
+  <label index="107" x="67" y="39" z="26">A37lv_R</label>
+  <label index="108" x="32" y="61" z="18">A35/36r_L</label>
+  <label index="109" x="58" y="59" z="18">A35/36r_R</label>
+  <label index="110" x="32" y="51" z="22">A35/36c_L</label>
+  <label index="111" x="61" y="53" z="21">A35/36c_R</label>
+  <label index="112" x="32" y="46" z="28">TL_L</label>
+  <label index="113" x="59" y="49" z="26">TL_R</label>
+  <label index="114" x="36" y="61" z="19">A28/34_L</label>
+  <label index="115" x="55" y="58" z="19">A28/34_R</label>
+  <label index="116" x="34" y="64" z="19">TI_L</label>
+  <label index="117" x="55" y="64" z="18">TI_R</label>
+  <label index="118" x="37" y="43" z="31">TH_L</label>
+  <label index="119" x="52" y="45" z="31">TH_R</label>
+  <label index="120" x="19" y="43" z="37">rpSTS_L</label>
+  <label index="121" x="71" y="45" z="37">rpSTS_R</label>
+  <label index="122" x="19" y="38" z="41">cpSTS_L</label>
+  <label index="123" x="76" y="43" z="42">cpSTS_R</label>
+  <label index="124" x="37" y="32" z="67">A7r_L</label>
+  <label index="125" x="53" y="34" z="68">A7r_R</label>
+  <label index="126" x="37" y="28" z="61">A7c_L</label>
+  <label index="127" x="53" y="28" z="63">A7c_R</label>
+  <label index="128" x="27" y="39" z="64">A5l_L</label>
+  <label index="129" x="63" y="41" z="65">A5l_R</label>
+  <label index="130" x="34" y="39" z="67">A7pc_L</label>
+  <label index="131" x="60" y="42" z="69">A7pc_R</label>
+  <label index="132" x="32" y="33" z="63">A7ip_L</label>
+  <label index="133" x="60" y="37" z="64">A7ip_R</label>
+  <label index="134" x="25" y="22" z="46">A39c_L</label>
+  <label index="135" x="69" y="28" z="46">A39c_R</label>
+  <label index="136" x="26" y="32" z="60">A39rd_L</label>
+  <label index="137" x="64" y="30" z="59">A39rd_R</label>
+  <label index="138" x="15" y="52" z="52">A40rd_L</label>
+  <label index="139" x="66" y="43" z="57">A40rd_R</label>
+  <label index="140" x="16" y="39" z="53">A40c_L</label>
+  <label index="141" x="74" y="41" z="54">A40c_R</label>
+  <label index="142" x="20" y="31" z="47">A39rv_L</label>
+  <label index="143" x="72" y="37" z="46">A39rv_R</label>
+  <label index="144" x="14" y="49" z="47">A40rv_L</label>
+  <label index="145" x="73" y="49" z="48">A40rv_R</label>
+  <label index="146" x="43" y="30" z="60">A7m_L</label>
+  <label index="147" x="48" y="30" z="61">A7m_R</label>
+  <label index="148" x="42" y="38" z="65">A5m_L</label>
+  <label index="149" x="47" y="40" z="63">A5m_R</label>
+  <label index="150" x="40" y="28" z="52">dmPOS_L</label>
+  <label index="151" x="52" y="30" z="53">dmPOS_R</label>
+  <label index="152" x="42" y="35" z="55">A31_L</label>
+  <label index="153" x="48" y="36" z="56">A31_R</label>
+  <label index="154" x="18" y="55" z="58">A1/2/3ulhf_L</label>
+  <label index="155" x="71" y="58" z="56">A1/2/3ulhf_R</label>
+  <label index="156" x="22" y="55" z="43">A1/2/3tonIa_L</label>
+  <label index="157" x="69" y="58" z="43">A1/2/3tonIa_R</label>
+  <label index="158" x="24" y="45" z="61">A2_L</label>
+  <label index="159" x="71" y="52" z="61">A2_R</label>
+  <label index="160" x="32" y="45" z="70">A1/2/3tru_L</label>
+  <label index="161" x="59" y="47" z="69">A1/2/3tru_R</label>
+  <label index="162" x="27" y="53" z="40">G_L</label>
+  <label index="163" x="63" y="53" z="41">G_R</label>
+  <label index="164" x="29" y="70" z="29">vIa_L</label>
+  <label index="165" x="61" y="69" z="28">vIa_R</label>
+  <label index="166" x="27" y="72" z="35">dIa_L</label>
+  <label index="167" x="65" y="72" z="34">dIa_R</label>
+  <label index="168" x="26" y="64" z="29">vId/vIg_L</label>
+  <label index="169" x="65" y="60" z="32">vId/vIg_R</label>
+  <label index="170" x="27" y="58" z="42">dIg_L</label>
+  <label index="171" x="65" y="61" z="37">dIg_R</label>
+  <label index="172" x="25" y="67" z="36">dId_L</label>
+  <label index="173" x="65" y="67" z="35">dId_R</label>
+  <label index="174" x="43" y="39" z="51">A23d_L</label>
+  <label index="175" x="48" y="40" z="52">A23d_R</label>
+  <label index="176" x="44" y="66" z="51">A24rv_L</label>
+  <label index="177" x="46" y="71" z="32">A24rv_R</label>
+  <label index="178" x="42" y="82" z="45">A32p_L</label>
+  <label index="179" x="48" y="79" z="48">A32p_R</label>
+  <label index="180" x="41" y="38" z="38">A23v_L</label>
+  <label index="181" x="50" y="43" z="38">A23v_R</label>
+  <label index="182" x="43" y="67" z="55">A24cd_L</label>
+  <label index="183" x="46" y="69" z="52">A24cd_R</label>
+  <label index="184" x="42" y="52" z="57">A23c_L</label>
+  <label index="185" x="47" y="51" z="57">A23c_R</label>
+  <label index="186" x="43" y="82" z="33">A32sg_L</label>
+  <label index="187" x="48" y="84" z="37">A32sg_R</label>
+  <label index="188" x="40" y="21" z="30">cLinG_L</label>
+  <label index="189" x="50" y="19" z="30">cLinG_R</label>
+  <label index="190" x="42" y="23" z="39">rCunG_L</label>
+  <label index="191" x="49" y="25" z="40">rCunG_R</label>
+  <label index="192" x="43" y="16" z="35">cCunG_L</label>
+  <label index="193" x="50" y="17" z="38">cCunG_R</label>
+  <label index="194" x="35" y="34" z="32">rLinG_L</label>
+  <label index="195" x="55" y="31" z="32">rLinG_R</label>
+  <label index="196" x="37" y="29" z="39">vmPOS_L</label>
+  <label index="197" x="51" y="32" z="39">vmPOS_R</label>
+  <label index="198" x="29" y="19" z="39">mOccG_L</label>
+  <label index="199" x="63" y="20" z="39">mOccG_R</label>
+  <label index="200" x="22" y="26" z="38">V5/MT+_L</label>
+  <label index="201" x="69" y="27" z="36">V5/MT+_R</label>
+  <label index="202" x="35" y="13" z="36">OPC_L</label>
+  <label index="203" x="58" y="15" z="37">OPC_R</label>
+  <label index="204" x="34" y="18" z="29">iOccG_L</label>
+  <label index="205" x="57" y="20" z="29">iOccG_R</label>
+  <label index="206" x="42" y="18" z="50">msOccG_L</label>
+  <label index="207" x="52" y="18" z="50">msOccG_R</label>
+  <label index="208" x="35" y="22" z="57">lsOccG_L</label>
+  <label index="209" x="59" y="24" z="58">lsOccG_R</label>
+  <label index="210" x="36" y="63" z="24">mAmyg_L</label>
+  <label index="211" x="55" y="62" z="27">mAmyg_R</label>
+  <label index="212" x="31" y="62" z="22">lAmyg_L</label>
+  <label index="213" x="59" y="61" z="27">lAmyg_R</label>
+  <label index="214" x="35" y="57" z="26">rHipp_L</label>
+  <label index="215" x="58" y="57" z="25">rHipp_R</label>
+  <label index="216" x="28" y="52" z="28">cHipp_L</label>
+  <label index="217" x="62" y="54" z="27">cHipp_R</label>
+  <label index="218" x="39" y="72" z="37">vCa_L</label>
+  <label index="219" x="55" y="67" z="33">vCa_R</label>
+  <label index="220" x="34" y="62" z="38">GP_L</label>
+  <label index="221" x="56" y="59" z="34">GP_R</label>
+  <label index="222" x="39" y="67" z="30">NAC_L</label>
+  <label index="223" x="53" y="67" z="30">NAC_R</label>
+  <label index="224" x="33" y="65" z="33">vmPu_L</label>
+  <label index="225" x="57" y="66" z="36">vmPu_R</label>
+  <label index="226" x="38" y="69" z="42">dCa_L</label>
+  <label index="227" x="52" y="68" z="43">dCa_R</label>
+  <label index="228" x="30" y="59" z="35">dlPu_L</label>
+  <label index="229" x="60" y="58" z="35">dlPu_R</label>
+  <label index="230" x="43" y="53" z="39">mPFtha_L</label>
+  <label index="231" x="49" y="61" z="37">mPFtha_R</label>
+  <label index="232" x="34" y="54" z="41">mPMtha_L</label>
+  <label index="233" x="51" y="54" z="35">mPMtha_R</label>
+  <label index="234" x="37" y="52" z="34">Stha_L</label>
+  <label index="235" x="54" y="52" z="36">Stha_R</label>
+  <label index="236" x="44" y="60" z="36">rTtha_L</label>
+  <label index="237" x="46" y="54" z="36">rTtha_R</label>
+  <label index="238" x="34" y="49" z="41">PPtha_L</label>
+  <label index="239" x="52" y="48" z="34">PPtha_R</label>
+  <label index="240" x="37" y="47" z="36">Otha_L</label>
+  <label index="241" x="50" y="47" z="39">Otha_R</label>
+  <label index="242" x="42" y="52" z="42">cTtha_L</label>
+  <label index="243" x="48" y="60" z="42">cTtha_R</label>
+  <label index="244" x="38" y="55" z="38">lPFtha_L</label>
+  <label index="245" x="51" y="58" z="39">lPFtha_R</label>
+  <label index="246" x="96" y="81" z="55">Left I-IV</label>
+  <label index="248" x="84" y="80" z="56">Right I-IV</label>
+  <label index="249" x="107" y="78" z="52">Left V</label>
+  <label index="250" x="73" y="77" z="52">Right V</label>
+  <label index="251" x="104" y="58" z="51">Left VI</label>
+  <label index="252" x="90" y="53" z="51">Vermis VI</label>
+  <label index="253" x="69" y="61" z="49">Right VI</label>
+  <label index="254" x="129" y="55" z="41">Left Crus I</label>
+  <label index="255" x="94" y="48" z="46">Vermis Crus I</label>
+  <label index="256" x="49" y="55" z="41">Right Crus I</label>
+  <label index="257" x="102" y="45" z="33">Left Crus II</label>
+  <label index="258" x="89" y="52" z="40">Vermis Crus II</label>
+  <label index="259" x="70" y="46" z="31">Right Crus II</label>
+  <label index="260" x="128" y="68" z="18">Left VIIb</label>
+  <label index="261" x="89" y="57" z="41">Vermis VIIb</label>
+  <label index="262" x="60" y="56" z="19">Right VIIb</label>
+  <label index="263" x="119" y="72" z="18">Left VIIIa</label>
+  <label index="264" x="89" y="56" z="30">Vermis VIIIa</label>
+  <label index="265" x="64" y="64" z="17">Right VIIIa</label>
+  <label index="266" x="108" y="74" z="17">Left VIIIb</label>
+  <label index="267" x="90" y="61" z="27">Vermis VIIIb</label>
+  <label index="268" x="71" y="73" z="17">Right VIIIb</label>
+  <label index="269" x="96" y="70" z="21">Left IX</label>
+  <label index="270" x="90" y="71" z="36">Vermis IX</label>
+  <label index="271" x="84" y="71" z="20">Right IX</label>
+  <label index="272" x="111" y="91" z="26">Left X</label>
+  <label index="273" x="90" y="78" z="37">Vermis X</label>
+  <label index="274" x="67" y="90" z="26">Right X</label>
+</data>
+</atlas>
