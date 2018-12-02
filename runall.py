@@ -24,7 +24,7 @@ import shutil
 # results_path = '/mnt/project1/home1/varunk/results/'
 
 SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
-number_of_selected_subjects = 4
+number_of_selected_subjects = 2
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
 
@@ -84,7 +84,7 @@ wm_path = opj(base_directory,datasink_name,'wm_mask_paths/wm_mask_file_list.npy'
 #  Binarized atlas mask path
 
 binarized_atlas_mask_path = task_info["binarized_atlas_mask_path"]
-
+OVERWRITE_POSTPROS_DIR = False
 
 
 # --------------- Creating Log --------------------
@@ -125,12 +125,14 @@ layout = BIDSLayout(data_directory)
 # if number_of_subjects == -1:
 #     number_of_subjects = len(layout.get_subjects())
 
-# ABIDE II Bugs
+# ABIDE II Bugs - No Anat all, No func: 29622
 
 bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', '28712', '28713', '28741', '28745',  '28751', '28755', '28756', '28757', '28758',
 '28759', '28761', '28762','28763', '28764','28765','28766','28767','28768','28769','28770','28771','28772','28773','28774','28775','28776','28777','28778','28779',
-'28780','28781','28782','28783','29622'
+'28780','28781','28782','28783', '29622'
 ]
+
+
 
 # bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247',
 # '51270','51310','51276','50045', '50746', '50727', '50774',
@@ -139,24 +141,6 @@ bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', 
 bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247',
 '51270','51310', '50727']
 
-bugs_abide1.extend(['50697','50694','50626','50625','50624','50618','50617','51324','51296','51263','50746'])
-
-'''
-ABIDE 1 Bugs:
-
-50697 Neck
-50694 Neck
-50626 Neck
-50625 Neck
-50624 Neck
-50618 Blurred and skull	Bad anat
-50617 Neck
-51324 Flipped brain	Due to improper skull strip
-51296 Too blurred and spread and a lot of skull
-51263 Flipped brain	Due to improper skull strip
-50746 Flipped brain	Due to improper skull strip
-
-'''
 
 '''
 UCLA_1
@@ -191,7 +175,7 @@ discarded. So total of 11 subjects are discarded.
 '''
 
 
-bugs = bugs_abide1
+bugs = bugs_abide2
 # bugs = []
 # subject_list = (layout.get_subjects())[0:number_of_subjects]
 # subject_list = list(map(int, subject_list))
@@ -273,13 +257,18 @@ HYPOTEST = 0
 FDRES = 0
 SCORE_CORR = 0
 
+# ABIDE II
+run = 1
+session = [1,2]
+
 match = 1 # Age matching
 applyFisher = True
 
 # itr = (list(itertools.product([0, 1], repeat=3)))
 # itr = [(1,1,1,1,1)]
 # itr = [(1,0,0,0,0)]
-itr = [(1,1,1,1)]
+# itr = [(1,1,1,1)]
+itr = [(0,1,1,1)]
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
@@ -317,8 +306,9 @@ if PREPROC == 1:
 
     log.flush()
 
+    DO_FAST = False
     try:
-        prep.main(paths,options_binary_string, ANAT, num_proc)
+        prep.main(paths,options_binary_string, ANAT, DO_FAST, num_proc)
     except:
         print('Error Occured in Preprocessing')
 
@@ -330,20 +320,58 @@ if PREPROC == 1:
 # Options for Calculating residuals
 calc_residual_options = np.array(['csf', 'wm', 'motion', 'global']) # 'const'
 residual_options_itr = list(itertools.product([True, False], repeat= 4))
-calc_residual_options_itr = [['const']]*len(residual_options_itr) # [['const'],['const'], ...]
+# calc_residual_options_itr = [['const']]*len(residual_options_itr) # [['const'],['const'], ...]
+# Above statement didnt work. It was creating copies of later inserted elements
+calc_residual_options_itr = []
+for i in range(len(residual_options_itr)):
+    calc_residual_options_itr.append(['const'])
 for i, mask in enumerate(residual_options_itr):
     calc_residual_options_itr[i].extend(calc_residual_options[list(mask)])
 
 # ------------------------PostProcess------------------------------------------
+
+'''
+Brains that have > 30% volumes either translation or rotation > 2.5 mm or degree
+Calculated using find_bad_brains.py script
+'''
+bugs_abide1.extend(['0050123', '0050279', '0050286',\
+ '0050306', '0050489', '0051095', '0051213'])
+
+'''
+ABIDE 1 Bugs: (By manually looking at resampled and registered anatomical files)
+
+50697 Neck
+50694 Neck
+50626 Neck
+50625 Neck
+50624 Neck
+50618 Blurred and skull	Bad anat
+50617 Neck
+51324 Flipped brain	Due to improper skull strip
+51296 Too blurred and spread and a lot of skull
+51263 Flipped brain	Due to improper skull strip
+50746 Flipped brain	Due to improper skull strip
+'''
+
+bugs_abide1.extend(['50697','50694','50626','50625','50624','50618','50617','51324','51296','51263','50746'])
+
+
+bugs = bugs_abide2
 
 
 if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
     print('PostProcessing')
     log.write("Postprocessing Params\n")
 
+    print('Residual_options_list: ',calc_residual_options_itr)
 
     # overriding calc_residual_options_itr for testing
-    calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
+    # calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
+    # calc_residual_options_itr = [['const','csf', 'wm', 'global']]
+
+    #  TODO Have to try the following
+    # calc_residual_options_itr = [[]]
+
     for calc_residual_options in calc_residual_options_itr:
         for calc_residual, smoothing, band_pass_filtering, volCorrect in itr:
             log.write("calc_residual  = %s\n"%(calc_residual))
@@ -358,24 +386,25 @@ if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
             log.write("Fisher Transform = %s\n"%(applyFisher))
             log.flush()
 
-
-            comb = ''
-            for a in calc_residual_options:
-                comb = comb + a
-
-            combination = 'calc_residual' + str(int(calc_residual)) + \
-            'smoothing' + str(int(smoothing)) +\
-            'filt' + str(int(band_pass_filtering)) +\
-            'calc_residual_options' + comb
-
-            print("Combination: ",combination)
-            functional_connectivity_directory =  combination
-            print(calc_residual, smoothing,band_pass_filtering)
+            #
+            # comb = ''
+            # for a in calc_residual_options:
+            #     comb = comb + a
+            #
+            # combination = 'calc_residual' + str(int(calc_residual)) + \
+            # 'smoothing' + str(int(smoothing)) +\
+            # 'filt' + str(int(band_pass_filtering)) +\
+            # 'calc_residual_options' + comb
+            #
+            # print("Combination: ",combination)
+            # functional_connectivity_directory =  combination
+            # print(calc_residual, smoothing,band_pass_filtering)
             save_npy = 0
 
             if POSTPROC == 1:
                 ppfc.main(paths, vols, calc_residual, band_pass_filtering, smoothing, volCorrect, \
-                number_of_skipped_volumes, num_proc, save_npy, calc_residual_options)
+                number_of_skipped_volumes, num_proc, save_npy, calc_residual_options, OVERWRITE_POSTPROS_DIR,\
+                run, session)
 
 
 # ------------------- Hypothesis Test ------------------------------------------
@@ -387,7 +416,7 @@ if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
 
                 # for calc_residual, smoothing,band_pass_filtering, volCorrect in itr:
                 ht.main(paths, bugs,applyFisher,categoryInfo, match, calc_residual, band_pass_filtering, \
-                    smoothing, num_proc, calc_residual_options)
+                    smoothing, num_proc, calc_residual_options, OVERWRITE_POSTPROS_DIR)
 
 
             # -------------------- FDR and results -----------------------------------------
