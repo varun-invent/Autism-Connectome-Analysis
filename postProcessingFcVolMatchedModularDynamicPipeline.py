@@ -79,7 +79,8 @@ from confounds import confounds_creation as _calc_residuals
 
 def main(paths, vols, calc_residual=0, band_pass_filtering=0, \
 smoothing=0, volcorrect = 0, number_of_skipped_volumes=4, num_proc = 7,\
-save_npy = 0, calc_residual_options=None, OVERWRITE_POSTPROS_DIR = False
+save_npy = 0, calc_residual_options=None, OVERWRITE_POSTPROS_DIR = False,
+run = 1, session = None
 ):
     json_path=paths['json_path']
     base_directory=paths['base_directory']
@@ -133,7 +134,7 @@ save_npy = 0, calc_residual_options=None, OVERWRITE_POSTPROS_DIR = False
     subject_list = list(map(int, subject_list))
 
     if volcorrect == 1:
-        subject_list, subid_vol_dict = volumeCorrect(subject_list, phenotype_file_path, demographics_file_path, vols )
+        subject_list, subid_vol_dict = volumeCorrect(data_directory, subject_list, run, session, vols )
     else:
         subid_vol_dict = None
 
@@ -156,11 +157,63 @@ save_npy = 0, calc_residual_options=None, OVERWRITE_POSTPROS_DIR = False
         save_npy,\
         csf_path,\
         wm_path,\
-        calc_residual_options,OVERWRITE_POSTPROS_DIR)
+        calc_residual_options,OVERWRITE_POSTPROS_DIR, data_directory, run, session)
+
+def volumeCorrect(data_directory, subject_list, run=1, session=None, vols=None):
+    '''
+    load BIDS data grabber
+    load the VOLUMES from metadata for each subject
+    Create a Sub_ID_VOlumes dict
+    select subjects that have volumes > threshold
+    '''
+    from bids.grabbids import BIDSLayout
+    print('Data Directory %s'% data_directory)
+    print('Run %s Session %s'%(run,session))
+
+     # = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+
+    layout = BIDSLayout(data_directory)
+    # subjects = layout.get_subjects()
+    subjects = subject_list
+    subid_vol_dict = {}
+    subject_list = []
 
 
 
-def volumeCorrect(subject_list, phenotype_file_path = None, demographics_file_path = None, vols = None):
+
+    for subject_id in subjects:
+        if session == None:
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+            if len(func_file_path) == 0:
+                print('No Func file: %s'%subject_id)
+                continue
+        else:
+            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session[0], run=run, extensions=['nii', 'nii.gz'])]
+            if len(func_file_path) == 0:
+                func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session[1], run=run, extensions=['nii', 'nii.gz'])]
+                if len(func_file_path) == 0:
+                    print('No Func file: %s'%subject_id)
+                    continue
+
+        # print(func_file_path)
+        metadata = layout.get_metadata(path=func_file_path[0])
+        volumes  = metadata['NumberofMeasurements']
+        try:
+            volumes = int(volumes)
+        except ValueError:
+            # Mixed Volumes site
+            brain_img = nib.load(func_file_path[0])
+            volumes = brain_img.shape[-1]
+
+        if volumes >= vols:
+            subid_vol_dict[subject_id] = volumes
+            subject_list.append(subject_id)
+
+
+
+    return subject_list, subid_vol_dict
+
+def __volumeCorrect__(subject_list, phenotype_file_path = None, demographics_file_path = None, vols = None):
     if demographics_file_path == None:
         raise Exception('Demographics file not supplied')
         # demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
@@ -238,7 +291,7 @@ def _main(subject_list,vols,subid_vol_dict, number_of_skipped_volumes,brain_path
    functional_connectivity_directory, save_npy,\
     csf_path,\
     wm_path,\
-    calc_residual_options, OVERWRITE_POSTPROS_DIR):
+    calc_residual_options, OVERWRITE_POSTPROS_DIR, data_directory, run, session):
 
     # ## Volume correction
     # * I have already extracted 4 volumes.
