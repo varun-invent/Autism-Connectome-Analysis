@@ -26,6 +26,7 @@ from nipype.interfaces import afni
 import nibabel as nib
 import json
 from confounds import wf_main_for_masks as wfm
+from confounds import wf_tissue_priors as wftp
 
 
 # import logging
@@ -81,7 +82,7 @@ from confounds import wf_main_for_masks as wfm
 # subject_list = (layout.get_subjects())[0:number_of_subjects]
 
 
-def main(paths, options_binary_string, ANAT , num_proc = 7):
+def main(paths, options_binary_string, ANAT , DO_FAST=False, num_proc = 7):
 
     json_path=paths['json_path']
     base_directory=paths['base_directory']
@@ -132,7 +133,7 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
         # DEBUG Tried moving out. gave deep copy error..
         run = 1
 
-        session = 0
+        session = 1
 
         if session != 0:
             anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', session = session, run=run, extensions=['nii', 'nii.gz'])]
@@ -719,33 +720,33 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
 
 # -------------------------FAST -----------------------------------------------------------------------------------------------------
-    wf_confound_masks = wfm.get_wf_main(name='wf_main_masks')
+    if DO_FAST:
+        wf_confound_masks = wfm.get_wf_main(name='wf_main_masks')
 
-    wf_confound_masks.inputs.inputspec.brain_mask_eroded = \
-    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
+        wf_confound_masks.inputs.inputspec.brain_mask_eroded = \
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/brain_mask_2mm_eroded_18mm.nii.gz'
 
-    wf_confound_masks.inputs.inputspec.threshold = 0.5
+        wf_confound_masks.inputs.inputspec.threshold = 0.5
 
-    wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
-    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/csf_prior_mask.nii.gz'
-    wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
-    '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/wm_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/csf_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/wm_prior_mask.nii.gz'
 
 
+# ----------------------------No FAST -----------------------------------------------------------
+# TODO
+    if not DO_FAST:
+        wf_confound_masks = wftp.get_wf_tissue_priors(name='get_wf_tissue_priors')
+        wf_confound_masks.inputs.inputspec.csf_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/csf_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.wm_tissue_prior_path =\
+        '/mnt/project1/home1/varunk/fMRI/Autism-Connectome-Analysis/tissuepriors/created_tissue_priors/wm_prior_mask.nii.gz'
+        wf_confound_masks.inputs.inputspec.threshold = 0.5
 
-    # wf_confound_masks_and_qc = Workflow(name='wf_confound_masks_and_qc')
-    #
-    # wf_confound_masks_and_qc.connect(wf_confound_masks, 'outputspec.csf_tissue_prior_path',
-    #                                         save_file_list_in_confound_masks, 'in_csf_mask' )
-    # wf_confound_masks_and_qc.connect(wf_confound_masks, 'outputspec.wm_tissue_prior_path',
-    #                                         save_file_list_in_confound_masks, 'in_wm_mask' )
-    #
-    # wf_confound_masks_and_qc.connect(save_file_list_in_confound_masks, 'out_csf_mask', dataSink, 'csf_mask_paths.@out_csf_mask')
-    # wf_confound_masks_and_qc.connect(save_file_list_in_confound_masks, 'out_wm_mask', dataSink, 'wm_mask_paths.@out_wm_mask')
-    #
-    # #  Creating and saving the QC CSV
-    # wf_confound_masks_and_qc.connect(wf_confound_masks,'outputspec.qc_stats_dict', save_qc_csv, 'in_dict')
-    # wf_confound_masks_and_qc.connect(save_qc_csv, 'qc_csv', dataSink, 'qc_csv.@qc_csv')
+        # wf_confound_masks.inputs.inputspec.reference_func_file_path =
+        # wf_confound_masks.inputs.inputspec.std2func_mat_path =
+
 
 
 
@@ -774,8 +775,14 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     #  Sending to wf_confound_masks
     wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'reference_func_file_path', wf_confound_masks, 'inputspec.reference_func_file_path')
-    wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'resampled_anat_file_path', wf_confound_masks, 'inputspec.resampled_anat_file_path')
-    wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'func2anat_mat_path', wf_confound_masks, 'inputspec.func2anat_mat_path')
+
+    if DO_FAST:
+        wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'resampled_anat_file_path', wf_confound_masks, 'inputspec.resampled_anat_file_path')
+        wf_atlas_resize_reg.connect(wf_coreg_reg_to_wf_confound_masks,'func2anat_mat_path', wf_confound_masks, 'inputspec.func2anat_mat_path')
+        #  Creating and saving the QC CSV
+        wf_atlas_resize_reg.connect(wf_confound_masks,'outputspec.qc_stats_dict', save_qc_csv, 'in_dict')
+        wf_atlas_resize_reg.connect(save_qc_csv, 'qc_csv', dataSink, 'qc_csv.@qc_csv')
+
 
     #  Getting the outputs from wf_confound_masks workflow
 
@@ -786,10 +793,6 @@ def main(paths, options_binary_string, ANAT , num_proc = 7):
 
     wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_csf_mask', dataSink, 'csf_mask_paths.@out_csf_tissue_prior_mask')
     wf_atlas_resize_reg.connect(save_file_list_in_confound_masks, 'out_wm_mask', dataSink, 'wm_mask_paths.@out_wm_tissue_prior_mask')
-
-    #  Creating and saving the QC CSV
-    wf_atlas_resize_reg.connect(wf_confound_masks,'outputspec.qc_stats_dict', save_qc_csv, 'in_dict')
-    wf_atlas_resize_reg.connect(save_qc_csv, 'qc_csv', dataSink, 'qc_csv.@qc_csv')
 
 
 
