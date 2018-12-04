@@ -101,5 +101,8 @@ Functional file not present for subject ID 28783
 
 So I discarded these subjects.
 
+There is no functional file for subject 29622
+
+And the Number of measurements is written wrongly as 460 in the task json file. It should be 151. So I have changed it to 151.
 
 
