@@ -237,8 +237,36 @@ def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype, base_directory ):
 
 # In[153]:
 
+def tr_matching(refined_subject_list, df_td_lt18_m, df_aut_lt18_m, base_directory):
+    # df_demographics = pd.read_csv(demographics_file_path)
+    # df_demographics_TR = df_demographics.as_matrix(['SITE_NAME','TR']).squeeze()
 
-def tr_matching(TR_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype, base_directory ):
+    log_path = opj(base_directory,"log.txt")
+    log = open(log_path, 'a')
+    log.write("------------- TR Matching with the following bins -------------\n")
+    log.write("TR Bins: %s \n"%TR_bins)
+    log.flush()
+
+
+
+
+
+    selected_AUT = pd.DataFrame()
+    selected_TD = pd.DataFrame()
+    for sub_id in refined_subject_list:
+        row = df_AUT_phenotype.loc[(df_AUT_phenotype['SUB_ID'] == sub_id)]
+        if not row.empty:
+            selected_AUT = pd.concat([selected_AUT, row])
+        row = df_TD_phenotype.loc[(df_TD_phenotype['SUB_ID'] == sub_id)]
+        if not row.empty:
+            selected_TD = pd.concat([selected_TD,row])
+
+
+    matched_df_TD, matched_df_AUT = selected_TD, selected_AUT
+    return matched_df_TD, matched_df_AUT
+
+
+def _tr_matching(TR_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype, base_directory ):
     # df_demographics = pd.read_csv(demographics_file_path)
     df_demographics_TR = df_demographics.as_matrix(['SITE_NAME','TR']).squeeze()
 
@@ -259,7 +287,8 @@ def tr_matching(TR_bins, df_demographics, df_TD_phenotype, df_AUT_phenotype, bas
     bins_TR_TD_data = []
 
     for counter, _bin in enumerate(TR_bins):
-        df_demographics_TR_selected_bin = df_demographics_TR[np.where(np.logical_and((df_demographics_TR[:,1] > _bin[0]),(df_demographics_TR[:,1] <= _bin[1])))]
+        df_demographics_TR_selected_bin = \
+        df_demographics_TR[np.where(np.logical_and((df_demographics_TR[:,1] > _bin[0]),(df_demographics_TR[:,1] <= _bin[1])))]
 
 
         selected_AUT = pd.DataFrame()
