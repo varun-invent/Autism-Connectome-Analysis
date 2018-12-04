@@ -45,7 +45,7 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 
 
 def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0, band_pass_filtering=0, \
-    smoothing=0, num_proc = 7, calc_residual_options = None, OVERWRITE_POSTPROS_DIR = False):
+    smoothing=0, num_proc = 7, calc_residual_options = None, OVERWRITE_POSTPROS_DIR = False, run = 1, session = None):
     # json_path=paths[0]
     base_directory = paths['base_directory']
     motion_correction_bet_directory = paths['motion_correction_bet_directory']
@@ -64,9 +64,9 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     # motion_params_path=paths[15]
     # func2std_mat_path=paths[16]
     # MNI3mm_path=paths[17]
-    demographics_file_path = paths['demographics_file_path']
+    # demographics_file_path = paths['demographics_file_path']
     phenotype_file_path = paths['phenotype_file_path']
-    # data_directory = paths[20]
+    data_directory = paths['data_directory']
     hypothesis_test_dir = paths['hypothesis_test_dir']
     binarized_atlas_mask_path = paths['binarized_atlas_mask_path']
 
@@ -76,7 +76,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     if categoryInfo == None:
             # phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 
-        df = pd.read_csv(phenotype_file_path) # , index_col='SUB_ID'
+        df = pd.read_csv(phenotype_file_path, encoding = "ISO-8859-1") # , index_col='SUB_ID'
 
         df = df.sort_values(['SUB_ID'])
         # df = df.sort_values(['SUB+AF8-ID'])
@@ -138,8 +138,8 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
 
 
 
-        if demographics_file_path == None:
-            raise Exception('Demographics file not supplied')
+        # if demographics_file_path == None:
+        #     raise Exception('Demographics file not supplied')
             # demographics_file_path = '/home1/varunk/Autism-Connectome-Analysis-brain_connectivity/notebooks/demographics.csv'
 
         if phenotype_file_path == None:
@@ -147,7 +147,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
             # phenotype_file_path = '/home1/varunk/data/ABIDE1/RawDataBIDs/composite_phenotypic_file.csv'
 
 
-        df_demographics = pd.read_csv(demographics_file_path)
+        # df_demographics = pd.read_csv(demographics_file_path)
         # df_phenotype = pd.read_csv(phenotype_file_path)
         # df_phenotype = df_phenotype.sort_values(['SUB_ID'])
 
@@ -253,19 +253,77 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
 
         # --------------------- Matched data --------------------------------------------
         if match == 1:
+
+            def get_sub_id_TR_matching(data_directory, subject_list, TR_bin, run=1, session=None):
+                '''
+                load BIDS data grabber
+                load the VOLUMES from metadata for each subject
+                Create a Sub_ID_VOlumes dict
+                select subjects that have volumes > threshold
+                '''
+                from bids.grabbids import BIDSLayout
+                print('Data Directory %s'% data_directory)
+                print('Run %s Session %s'%(run,session))
+
+                 # = '/mnt/project1/home1/varunk/data/ABIDE2RawDataBIDS'
+
+                layout = BIDSLayout(data_directory)
+                # subjects = layout.get_subjects()
+                subjects = subject_list
+                subid_tr_dict = {}
+                subject_list = []
+
+
+
+
+                for subject_id in subjects:
+                    if session == None:
+                        func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold', run=run, extensions=['nii', 'nii.gz'])]
+                        if len(func_file_path) == 0:
+                            print('No Func file: %s'%subject_id)
+                            continue
+                    else:
+                        func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session[0], run=run, extensions=['nii', 'nii.gz'])]
+                        if len(func_file_path) == 0:
+                            func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session[1], run=run, extensions=['nii', 'nii.gz'])]
+                            if len(func_file_path) == 0:
+                                print('No Func file: %s'%subject_id)
+                                continue
+
+                    # print(func_file_path)
+                    metadata = layout.get_metadata(path=func_file_path[0])
+                    tr  = metadata['RepetitionTime']
+                    try:
+                        tr = int(tr)
+                    except ValueError:
+                        # Mixed tr site
+                        brain_img = nib.load(func_file_path[0])
+                        tr = brain_img.shape[-1]
+
+                    if tr >= TR_bin[0] and tr <= TR_bin[1]:
+                        subid_tr_dict[subject_id] = tr
+                        subject_list.append(subject_id)
+
+
+
+                return subject_list, subid_tr_dict
+
+
             # # TR matching
             print('TR Matching with range (0,2.5]')
 
-            # TODO Ask user which site needs to be dropped if any
-            df_demographics = df_demographics.drop(df_demographics.index[[7]]) # Deleting OHSU with volumes 82
+            # # Ask user which site needs to be dropped if any
+            # df_demographics = df_demographics.drop(df_demographics.index[[7]]) # Deleting OHSU with volumes 82
+            TR_bin = np.array([0,2.5])
 
-            TR_bins = np.array([[0,2.5]])
+            refined_subject_list, subid_tr_dict = get_sub_id_TR_matching(data_directory, subject_list, TR_bin, run, session)
+
             # TR_bins = np.array([[0,4]])
 
 
             # matched_df_TD = df_phenotype
             # matched_df_AUT = df_phenotype
-            df_td_lt18_m, df_aut_lt18_m = matching.tr_matching(TR_bins,df_demographics, df_td_lt18_m, df_aut_lt18_m, base_directory)
+            df_td_lt18_m, df_aut_lt18_m = matching.tr_matching(refined_subject_list, df_td_lt18_m, df_aut_lt18_m, base_directory)
 
 
             # Age Matching
