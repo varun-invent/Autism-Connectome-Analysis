@@ -70,7 +70,7 @@ def csf_wm_outliers(qc_csv_file, csf_thresh, wm_thresh):
 
 
 if __name__ == "__main__":
-    motion_params_npy = '/mnt/project2/home/varunk/fMRI/results/resultsABIDE1_2/'+\
+    motion_params_npy = '/mnt/project2/home/varunk/fMRI/results/resultsABIDE2_1/'+\
     'Preprocess_Datasink/motion_params_paths/motion_params_file_list.npy'
 
     qc_csv_file = '/mnt/project2/home/varunk/fMRI/results/resultsABIDE1_2/'+\
