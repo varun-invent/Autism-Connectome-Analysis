@@ -237,15 +237,15 @@ def age_matching(age_bins, df_TD_phenotype, df_AUT_phenotype, base_directory ):
 
 # In[153]:
 
-def tr_matching(refined_subject_list, df_td_lt18_m, df_aut_lt18_m, base_directory):
+def tr_matching(refined_subject_list, df_TD_phenotype, df_AUT_phenotype, base_directory):
     # df_demographics = pd.read_csv(demographics_file_path)
     # df_demographics_TR = df_demographics.as_matrix(['SITE_NAME','TR']).squeeze()
 
-    log_path = opj(base_directory,"log.txt")
-    log = open(log_path, 'a')
-    log.write("------------- TR Matching with the following bins -------------\n")
-    log.write("TR Bins: %s \n"%TR_bins)
-    log.flush()
+    # log_path = opj(base_directory,"log.txt")
+    # log = open(log_path, 'a')
+    # log.write("------------- TR Matching with the following bins -------------\n")
+    # log.write("TR Bins: %s \n"%TR_bins)
+    # log.flush()
 
 
 
