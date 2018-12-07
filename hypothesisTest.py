@@ -53,7 +53,7 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     # functional_connectivity_directory=paths[4]
     coreg_reg_directory= paths['coreg_reg_directory']
     atlas_resize_reg_directory= paths['atlas_resize_reg_directory']
-    # subject_list = paths[7]
+    subject_list = paths['subject_list']
     datasink_name = paths['datasink_name']
     fc_datasink_name = paths['fc_datasink_name']
     # atlasPath=paths[10]
@@ -69,6 +69,9 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     data_directory = paths['data_directory']
     hypothesis_test_dir = paths['hypothesis_test_dir']
     binarized_atlas_mask_path = paths['binarized_atlas_mask_path']
+
+
+    subject_list = list(map(int, subject_list))
 
     #  Runall:
 
@@ -304,6 +307,12 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
                         subid_tr_dict[subject_id] = tr
                         subject_list.append(subject_id)
 
+
+                log_path = opj(base_directory,"log.txt")
+                log = open(log_path, 'a')
+                log.write("------------- TR Matching with the following bin -------------\n")
+                log.write("TR Bin: %s \n"%TR_bin)
+                log.flush()
 
 
                 return subject_list, subid_tr_dict
