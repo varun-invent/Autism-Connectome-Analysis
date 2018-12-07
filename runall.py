@@ -23,7 +23,7 @@ import shutil
 
 # results_path = '/mnt/project1/home1/varunk/results/'
 
-SELECT_SUBJECTS = True # Number of subjects to select from the whole randomly
+SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
 number_of_selected_subjects = 2
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
@@ -131,6 +131,22 @@ bugs_abide2 = ['28093', '28093', '28681',  '28682', '28683',  '28687', '28711', 
 '28759', '28761', '28762','28763', '28764','28765','28766','28767','28768','28769','28770','28771','28772','28773','28774','28775','28776','28777','28778','28779',
 '28780','28781','28782','28783', '29622'
 ]
+
+
+# ABIDE II Motion Outliers bugs with  >30% volumes >2.5mm or degree
+bugs_abide2.extend(['28715', '28823', '29067', '29069', '29102', '29110', '29424', '29428', '29514', '29628', '29880', '29887', '29888', '29903'])
+
+
+# Visual QC
+bugs_abide2.extend(['30150', '30149', '29576', '29573', '29570', '29565', '29566', '29559', '29558',\
+ '29557', '29554', '29547', '29546', '29545', '29541', '29538', '29056', '29055',\
+  '29054', '29051', '29049', '29043', '29042', '29040', '29033', '29030', '29029',\
+   '29028', '29027', '29026', '29025', '29021', '29020', '29019', '29016', '29015',\
+    '28816', '28720', '28719', '28718', '28717', '28714', '28707', '28705', '28704',\
+     '28701', '28698', '28695', '28693', '28691', '28689', '28686', '28685', '28684', '28676'])
+
+
+
 
 
 
@@ -251,10 +267,10 @@ paths = {
 
 
 
-PREPROC = 1
-POSTPROC = 1
-HYPOTEST = 0
-FDRES = 0
+PREPROC = 0
+POSTPROC = 0
+HYPOTEST = 1
+FDRES = 1
 SCORE_CORR = 0
 
 # ABIDE II
@@ -268,7 +284,7 @@ applyFisher = True
 # itr = [(1,1,1,1,1)]
 # itr = [(1,0,0,0,0)]
 # itr = [(1,1,1,1)]
-itr = [(0,1,1,1)]
+itr = [(1,1,1,1)] # Post processing options
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
@@ -368,8 +384,8 @@ if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
     # overriding calc_residual_options_itr for testing
     # calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
     # calc_residual_options_itr = [['const','csf', 'wm', 'global']]
+    # calc_residual_options_itr = [['const']]
 
-    #  TODO Have to try the following
     # calc_residual_options_itr = [[]]
 
     for calc_residual_options in calc_residual_options_itr:
