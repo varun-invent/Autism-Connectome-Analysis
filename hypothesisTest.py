@@ -23,7 +23,7 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
 
     return_fc_maps = []
     fc_file_list = np.load(fc_file_path)
-    print('Brain files: ',fc_file_list)
+    # print('Brain files: ',fc_file_list)
     for subject_id in subject_id_list:
 #         print("For subject: ",subject_id)
         found =  False
@@ -37,7 +37,7 @@ def get_subject_fc_file(subject_id_list,fc_file_path, bugs):
                 return_fc_maps.append(brain)
 #                 print("Found for subject: ",subject_id)
         if found == False: # Some subject was not found Problem!
-            print ('Unable to locate Subject: ',int(subject_id),'extracted: ',int(sub_id_extracted))
+            print ('Unable to locate Subject: ',int(subject_id),'extracted example loosk like: ',int(sub_id_extracted))
             # return 0
     return return_fc_maps
 
@@ -460,20 +460,23 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
 
     # import pdb;pdb.set_trace()
     autistic_list = (get_subject_fc_file(df_aut_subid.squeeze(), fc_file_list, bugs))
-    print("Number of autistic participants ", len(autistic_list))
 
     td_list = (get_subject_fc_file(df_td_subid.squeeze(), fc_file_list, bugs))
-    print("Number of TD participants ", len(td_list))
 
     # participants_considered = min(len(autistic_list), len(td_list))
 
-    # participants_considered = 2
 
     # print("Number of participants being Considered per group:", participants_considered)
 
     autistic_list = autistic_list#[0:participants_considered]
-    td_list = td_list#[0:participants_considered]
+    td_list = td_list
+    #  Experiment ==============================
+    # participants_considered = len(autistic_list) + 10
 
+    # import random
+    # random.shuffle(td_list)
+    # td_list = td_list[0:participants_considered]
+    # =================================================
     save_destination_TD = opj(hypothesis_test_dir,combination,'TD_subects_filepath.txt')
     save_destination_AUT = opj(hypothesis_test_dir,combination,'AUT_subjects_filepath.txt')
 
@@ -481,6 +484,8 @@ def main(paths, bugs, applyFisher, categoryInfo= None, match=1, calc_residual=0,
     np.savetxt(save_destination_AUT,autistic_list,delimiter='/n', fmt='%s')
 
 
+    print("Number of autistic participants ", len(autistic_list))
+    print("Number of TD participants ", len(td_list))
 
     # Created the below mask manually using BET
     # mask = opj(base_directory,parent_wf_directory,motion_correction_bet_directory,coreg_reg_directory,'resample_mni/MNI152_T1_2mm_brain_resample_mask.nii.gz')
