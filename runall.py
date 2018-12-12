@@ -24,7 +24,7 @@ import shutil
 # results_path = '/mnt/project1/home1/varunk/results/'
 
 SELECT_SUBJECTS = False # Number of subjects to select from the whole randomly
-number_of_selected_subjects = 2
+number_of_selected_subjects = 5
 
 # ----------------------------------------Don't Modify ------------------------------------------------------------
 
@@ -158,6 +158,32 @@ bugs_abide1 = ['51232','51233','51242','51243','51244','51245','51246','51247',
 '51270','51310', '50727']
 
 
+
+'''
+Brains that have > 30% volumes either translation or rotation > 2.5 mm or degree
+Calculated using find_bad_brains.py script
+'''
+bugs_abide1.extend(['0050123', '0050279', '0050286',\
+'0050306', '0050489', '0051095', '0051213'])
+
+'''
+ABIDE 1 Bugs: (By manually looking at resampled and registered anatomical files)
+
+50697 Neck
+50694 Neck
+50626 Neck
+50625 Neck
+50624 Neck
+50618 Blurred and skull	Bad anat
+50617 Neck
+51324 Flipped brain	Due to improper skull strip
+51296 Too blurred and spread and a lot of skull
+51263 Flipped brain	Due to improper skull strip
+50746 Flipped brain	Due to improper skull strip
+'''
+
+bugs_abide1.extend(['50697','50694','50626','50625','50624','50618','50617','51324','51296','51263','50746'])
+
 '''
 UCLA_1
 '51232','51233' 51242','51243','51244',
@@ -268,14 +294,20 @@ paths = {
 
 
 PREPROC = 0
-POSTPROC = 1
+POSTPROC = 0
 HYPOTEST = 1
 FDRES = 1
 SCORE_CORR = 0
 
+
+#  ABIDE I
+
+# session = None
+
 # ABIDE II
 run = 1
 session = [1,2]
+
 
 match = 1 # Age matching
 applyFisher = True
@@ -284,7 +316,7 @@ applyFisher = True
 # itr = [(1,1,1,1,1)]
 # itr = [(1,0,0,0,0)]
 # itr = [(1,1,1,1)]
-itr = [(0,1,1,1)] # Post processing options
+itr = [(1,1,1,1)] # Post processing options
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
@@ -324,7 +356,7 @@ if PREPROC == 1:
 
     DO_FAST = False
     try:
-        prep.main(paths,options_binary_string, ANAT, DO_FAST, num_proc)
+        prep.main(paths,options_binary_string, ANAT, DO_FAST, num_proc, run, session)
     except:
         print('Error Occured in Preprocessing')
 
@@ -346,33 +378,6 @@ for i, mask in enumerate(residual_options_itr):
 
 # ------------------------PostProcess------------------------------------------
 
-'''
-Brains that have > 30% volumes either translation or rotation > 2.5 mm or degree
-Calculated using find_bad_brains.py script
-'''
-bugs_abide1.extend(['0050123', '0050279', '0050286',\
- '0050306', '0050489', '0051095', '0051213'])
-
-'''
-ABIDE 1 Bugs: (By manually looking at resampled and registered anatomical files)
-
-50697 Neck
-50694 Neck
-50626 Neck
-50625 Neck
-50624 Neck
-50618 Blurred and skull	Bad anat
-50617 Neck
-51324 Flipped brain	Due to improper skull strip
-51296 Too blurred and spread and a lot of skull
-51263 Flipped brain	Due to improper skull strip
-50746 Flipped brain	Due to improper skull strip
-'''
-
-bugs_abide1.extend(['50697','50694','50626','50625','50624','50618','50617','51324','51296','51263','50746'])
-
-
-bugs = bugs_abide2
 
 
 if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
@@ -384,7 +389,7 @@ if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
     # overriding calc_residual_options_itr for testing
     # calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
     # calc_residual_options_itr = [['const','csf', 'wm', 'global']]
-    # calc_residual_options_itr = [['const']]
+    calc_residual_options_itr = [['const']]
     if len(itr) == 1 and itr[0][0] == 0:
         calc_residual_options_itr = [[]]
 
@@ -432,7 +437,7 @@ if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
 
                 # for calc_residual, smoothing,band_pass_filtering, volCorrect in itr:
                 ht.main(paths, bugs,applyFisher,categoryInfo, match, calc_residual, band_pass_filtering, \
-                    smoothing, num_proc, calc_residual_options, OVERWRITE_POSTPROS_DIR)
+                    smoothing, num_proc, calc_residual_options, OVERWRITE_POSTPROS_DIR, run, session)
 
 
             # -------------------- FDR and results -----------------------------------------
