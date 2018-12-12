@@ -268,7 +268,7 @@ paths = {
 
 
 PREPROC = 0
-POSTPROC = 0
+POSTPROC = 1
 HYPOTEST = 1
 FDRES = 1
 SCORE_CORR = 0
@@ -284,7 +284,7 @@ applyFisher = True
 # itr = [(1,1,1,1,1)]
 # itr = [(1,0,0,0,0)]
 # itr = [(1,1,1,1)]
-itr = [(1,1,1,1)] # Post processing options
+itr = [(0,1,1,1)] # Post processing options
 
 log.write("Operations:\n")
 log.write("Preprocess = %s\n"%(PREPROC))
@@ -385,8 +385,8 @@ if POSTPROC == 1 or HYPOTEST == 1 or FDRES == 1:
     # calc_residual_options_itr = [['const','csf', 'wm', 'motion', 'global']]
     # calc_residual_options_itr = [['const','csf', 'wm', 'global']]
     # calc_residual_options_itr = [['const']]
-
-    # calc_residual_options_itr = [[]]
+    if len(itr) == 1 and itr[0][0] == 0:
+        calc_residual_options_itr = [[]]
 
     for calc_residual_options in calc_residual_options_itr:
         for calc_residual, smoothing, band_pass_filtering, volCorrect in itr:
