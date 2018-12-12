@@ -82,7 +82,7 @@ from confounds import wf_tissue_priors as wftp
 # subject_list = (layout.get_subjects())[0:number_of_subjects]
 
 
-def main(paths, options_binary_string, ANAT , DO_FAST=False, num_proc = 7):
+def main(paths, options_binary_string, ANAT , DO_FAST=False, num_proc = 7, run =1 , session= None):
 
     json_path=paths['json_path']
     base_directory=paths['base_directory']
@@ -125,17 +125,17 @@ def main(paths, options_binary_string, ANAT , DO_FAST=False, num_proc = 7):
     # In[858]:
 
 
-    def get_nifti_filenames(subject_id,data_dir):
+    def get_nifti_filenames(subject_id,data_dir, run, session):
     #     Remember that all the necesary imports need to be INSIDE the function for the Function Interface to work!
         from bids.grabbids import BIDSLayout
 
         layout = BIDSLayout(data_dir) # TODO takes lot of time to execute. Move it out in the next version
         # DEBUG Tried moving out. gave deep copy error..
-        run = 1
+        # run = 1
+        #
+        # session = 1
 
-        session = 1
-
-        if session != 0:
+        if session != None:
             anat_file_path = [f.filename for f in layout.get(subject=subject_id, type='T1w', session = session, run=run, extensions=['nii', 'nii.gz'])]
             func_file_path = [f.filename for f in layout.get(subject=subject_id, type='bold',session = session, run=run, extensions=['nii', 'nii.gz'])]
 
@@ -154,10 +154,12 @@ def main(paths, options_binary_string, ANAT , DO_FAST=False, num_proc = 7):
         return anat_file_path[0],func_file_path[0]
 
 
-    BIDSDataGrabber = Node(Function(function=get_nifti_filenames, input_names=['subject_id','data_dir'],
+    BIDSDataGrabber = Node(Function(function=get_nifti_filenames, input_names=['subject_id','data_dir','run','session'],
                                     output_names=['anat_file_path','func_file_path']), name='BIDSDataGrabber')
     # BIDSDataGrabber.iterables = [('subject_id',subject_list)]
     BIDSDataGrabber.inputs.data_dir = data_directory
+    BIDSDataGrabber.inputs.run = run
+    BIDSDataGrabber.inputs.session = session
 
 
     # ## Return TR
